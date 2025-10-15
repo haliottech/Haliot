@@ -1,96 +1,93 @@
+import { useEffect, useState } from "react";
 import Header from "@/components/Layout/Header";
 import ResearchCard from "@/components/Feed/ResearchCard";
 import { Button } from "@/components/ui/button";
-import { PenSquare } from "lucide-react";
+import { PenSquare, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// Mock data
-const mockPosts = [
-  {
-    author: {
-      name: "Dr. Sarah Chen",
-      affiliation: "MIT - Computer Science",
-      verified: true,
-      avatar: "",
-    },
-    title: "Novel Approach to Federated Learning in Healthcare AI",
-    summary: "We present a new privacy-preserving framework for training medical AI models across multiple hospitals without sharing patient data. Our method achieves 94% accuracy while maintaining HIPAA compliance and reduces communication overhead by 40% compared to traditional federated learning approaches.",
-    tags: ["AI Ethics", "Healthcare", "Privacy", "Machine Learning"],
-    stats: {
-      endorsements: 234,
-      comments: 45,
-      shares: 89,
-    },
-    timestamp: "2 hours ago",
-  },
-  {
-    author: {
-      name: "Prof. James Morrison",
-      affiliation: "Stanford University - Climate Science",
-      verified: true,
-      avatar: "",
-    },
-    title: "Breakthrough in Carbon Capture Efficiency Using Bio-Inspired Materials",
-    summary: "Our research demonstrates a 300% improvement in CO2 capture rates using materials inspired by deep-sea organisms. This could revolutionize industrial carbon capture technology and accelerate progress toward net-zero emissions targets.",
-    tags: ["Climate Tech", "Sustainability", "Materials Science"],
-    stats: {
-      endorsements: 567,
-      comments: 123,
-      shares: 234,
-    },
-    timestamp: "5 hours ago",
-  },
-  {
-    author: {
-      name: "Dr. Amara Okafor",
-      affiliation: "Oxford University - Behavioral Economics",
-      verified: true,
-      avatar: "",
-    },
-    title: "How Micro-Incentives Shape Long-Term Saving Behavior in Low-Income Communities",
-    summary: "A 3-year field study across 12 communities reveals that small, frequent rewards increase savings rates by 156% compared to traditional approaches. Our findings challenge conventional wisdom about financial literacy programs and suggest new policy directions.",
-    tags: ["Behavioral Economics", "Policy", "Social Impact"],
-    stats: {
-      endorsements: 189,
-      comments: 67,
-      shares: 45,
-    },
-    timestamp: "1 day ago",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const Feed = () => {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("research_posts")
+      .select(`
+        *,
+        profiles:user_id (full_name, email, affiliation)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching posts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load posts",
+        variant: "destructive",
+      });
+    } else {
+      setPosts(data || []);
+    }
+    setLoading(false);
+  };
+
+  const getTimeAgo = (date: string) => {
+    const now = new Date();
+    const posted = new Date(date);
+    const diffMs = now.getTime() - posted.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
+
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <Header />
       
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Create Post CTA */}
-          <div className="bg-card rounded-lg shadow-card p-4">
-            <Link to="/create">
-              <Button className="w-full" variant="outline" size="lg">
-                <PenSquare className="h-5 w-5 mr-2" />
-                Share your research or insights...
-              </Button>
-            </Link>
-          </div>
-
-          {/* Filter/Sort Bar */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm">Latest</Button>
-              <Button variant="ghost" size="sm">Trending</Button>
-              <Button variant="ghost" size="sm">Following</Button>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          </div>
-
-          {/* Feed */}
-          <div className="space-y-6">
-            {mockPosts.map((post, index) => (
-              <ResearchCard key={index} {...post} />
-            ))}
-          </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">No posts yet. Be the first to share!</p>
+              <Link to="/create">
+                <Button className="gap-2">
+                  <PenSquare className="h-4 w-4" />
+                  Create First Post
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {posts.map((post) => (
+                <ResearchCard
+                  key={post.id}
+                  id={post.id}
+                  author={post.profiles?.full_name || post.profiles?.email || "Anonymous"}
+                  authorAffiliation={post.profiles?.affiliation}
+                  title={post.title}
+                  summary={post.summary}
+                  tags={post.tags || []}
+                  timeAgo={getTimeAgo(post.created_at)}
+                  userId={post.user_id}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

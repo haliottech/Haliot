@@ -1,123 +1,168 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { FlaskConical } from "lucide-react";
+import { z } from "zod";
+
+const emailSchema = z.string().email("Invalid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const Auth = () => {
-  const [userType, setUserType] = useState<"researcher" | "student" | "public">("researcher");
+  const navigate = useNavigate();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/");
+      }
+    });
+  }, [navigate]);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Sign Up Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. You can now sign in.",
+        });
+        setIsSignUp(false);
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Sign In Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        navigate("/");
+      }
+    }
+
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo/Header */}
-        <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex items-center space-x-2">
-            <div className="h-12 w-12 rounded-lg bg-primary-foreground"></div>
-            <span className="text-3xl font-bold text-primary-foreground">Haliot</span>
-          </Link>
-          <p className="text-primary-foreground/90 text-lg">
-            Where research meets collaboration
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/5 p-4">
+      <Card className="w-full max-w-md p-8 glass-card">
+        <div className="flex flex-col items-center mb-8">
+          <FlaskConical className="h-12 w-12 text-primary mb-2" />
+          <h1 className="text-3xl font-bold text-foreground">Haliot</h1>
+          <p className="text-muted-foreground mt-2">
+            {isSignUp ? "Create your account" : "Welcome back"}
           </p>
         </div>
 
-        <Card className="shadow-elevated">
-          <CardHeader>
-            <CardTitle>Welcome to Haliot</CardTitle>
-            <CardDescription>Join the global research community</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
+        <form onSubmit={handleAuth} className="space-y-4">
+          {isSignUp && (
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium mb-2">
+                Full Name
+              </label>
+              <Input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="John Doe"
+                required={isSignUp}
+              />
+            </div>
+          )}
 
-              <TabsContent value="signin" className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="you@university.edu" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" />
-                </div>
-                <Button className="w-full" size="lg">Sign In</Button>
-                <div className="text-center">
-                  <a href="#" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
-              </TabsContent>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-2">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
+          </div>
 
-              <TabsContent value="signup" className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <Label>I am a...</Label>
-                  <div className="flex gap-2">
-                    <Badge
-                      variant={userType === "researcher" ? "default" : "outline"}
-                      className="cursor-pointer px-4 py-2"
-                      onClick={() => setUserType("researcher")}
-                    >
-                      Researcher
-                    </Badge>
-                    <Badge
-                      variant={userType === "student" ? "default" : "outline"}
-                      className="cursor-pointer px-4 py-2"
-                      onClick={() => setUserType("student")}
-                    >
-                      Student
-                    </Badge>
-                    <Badge
-                      variant={userType === "public" ? "default" : "outline"}
-                      className="cursor-pointer px-4 py-2"
-                      onClick={() => setUserType("public")}
-                    >
-                      Enthusiast
-                    </Badge>
-                  </div>
-                </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium mb-2">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Dr. Jane Smith" />
-                </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+          </Button>
+        </form>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" placeholder="you@university.edu" />
-                  {userType === "researcher" && (
-                    <p className="text-xs text-muted-foreground">
-                      Use your institutional email for automatic verification
-                    </p>
-                  )}
-                </div>
-
-                {userType === "researcher" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="affiliation">Affiliation</Label>
-                    <Input id="affiliation" placeholder="University / Institution" />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input id="signup-password" type="password" />
-                </div>
-
-                <Button className="w-full" size="lg">Create Account</Button>
-                
-                <p className="text-xs text-muted-foreground text-center">
-                  By signing up, you agree to our Terms of Service and Privacy Policy
-                </p>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-sm text-primary hover:underline"
+          >
+            {isSignUp
+              ? "Already have an account? Sign in"
+              : "Don't have an account? Sign up"}
+          </button>
+        </div>
+      </Card>
     </div>
   );
 };

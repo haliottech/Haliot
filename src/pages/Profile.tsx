@@ -130,9 +130,9 @@ const Profile = () => {
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
             <TabsContent value="research" className="space-y-6 mt-6">
-              {publications.map((post, index) => (
-                <ResearchCard key={index} {...post} />
-              ))}
+              <div className="text-center py-12 text-muted-foreground">
+                Your research posts will appear here
+              </div>
             </TabsContent>
             <TabsContent value="discussions" className="mt-6">
               <div className="text-center py-12 text-muted-foreground">
