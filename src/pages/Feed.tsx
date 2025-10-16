@@ -21,7 +21,7 @@ const Feed = () => {
       .from("research_posts")
       .select(`
         *,
-        profiles:user_id (full_name, email, affiliation)
+        profiles!research_posts_user_id_fkey (full_name, email, affiliation)
       `)
       .order("created_at", { ascending: false });
 
