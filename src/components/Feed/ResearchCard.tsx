@@ -61,7 +61,7 @@ const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, tim
       .from("comments")
       .select(`
         *,
-        profiles!comments_user_id_fkey (full_name, email)
+        profiles!inner (full_name, email)
       `)
       .eq("post_id", id)
       .is("parent_id", null)

@@ -1,151 +1,307 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 import Header from "@/components/Layout/Header";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Loader2, LogOut, Edit } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import ResearchCard from "@/components/Feed/ResearchCard";
-import { BadgeCheck, MapPin, Link as LinkIcon, Users } from "lucide-react";
 
 const Profile = () => {
-  // Mock profile data
-  const profile = {
-    name: "Dr. Sarah Chen",
-    affiliation: "MIT - Computer Science",
-    verified: true,
-    location: "Cambridge, MA",
-    bio: "AI researcher focusing on privacy-preserving machine learning and federated learning systems. Passionate about making AI safer and more accessible for healthcare applications.",
-    website: "sarahchen.ai",
-    expertise: ["Machine Learning", "AI Ethics", "Healthcare AI", "Privacy"],
-    stats: {
-      followers: 2456,
-      following: 342,
-      endorsements: 1234,
-      publications: 45,
-    },
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [affiliation, setAffiliation] = useState("");
+  const [bio, setBio] = useState("");
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        navigate("/auth");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchUserPosts();
+
+      // Realtime subscription for profile updates
+      const profileChannel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Profile updated:', payload);
+            fetchProfile();
+          }
+        )
+        .subscribe();
+
+      // Realtime subscription for posts updates
+      const postsChannel = supabase
+        .channel('posts-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'research_posts',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Posts updated:', payload);
+            fetchUserPosts();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(profileChannel);
+        supabase.removeChannel(postsChannel);
+      };
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+    } else {
+      setProfile(data);
+      setFullName(data.full_name || "");
+      setAffiliation(data.affiliation || "");
+      setBio(data.bio || "");
+    }
   };
 
-  const publications = [
-    {
-      author: {
-        name: "Dr. Sarah Chen",
-        affiliation: "MIT - Computer Science",
-        verified: true,
-      },
-      title: "Novel Approach to Federated Learning in Healthcare AI",
-      summary: "We present a new privacy-preserving framework for training medical AI models across multiple hospitals without sharing patient data.",
-      tags: ["AI Ethics", "Healthcare", "Privacy"],
-      stats: {
-        endorsements: 234,
-        comments: 45,
-        shares: 89,
-      },
-      timestamp: "2 hours ago",
-    },
-  ];
+  const fetchUserPosts = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("research_posts")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching posts:", error);
+    } else {
+      setPosts(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: fullName,
+        affiliation: affiliation,
+        bio: bio,
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+      setEditMode(false);
+      fetchProfile();
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  const getTimeAgo = (date: string) => {
+    const now = new Date();
+    const posted = new Date(date);
+    const diffMs = now.getTime() - posted.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
+
+  if (!user || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <Header />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="space-y-8">
           {/* Profile Header */}
-          <div className="bg-card rounded-lg shadow-card p-8">
-            <div className="flex flex-col md:flex-row gap-6">
-              <Avatar className="h-32 w-32">
-                <AvatarImage src="" />
-                <AvatarFallback className="text-3xl">SC</AvatarFallback>
-              </Avatar>
-
-              <div className="flex-1 space-y-4">
+          <Card className="p-6 glass-card">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex gap-4 items-start">
+                <Avatar className="h-20 w-20">
+                  <AvatarFallback className="text-2xl">
+                    {(profile.full_name || profile.email || "?").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h1 className="text-3xl font-bold text-foreground">{profile.name}</h1>
-                    {profile.verified && (
-                      <BadgeCheck className="h-6 w-6 text-verified" />
-                    )}
-                  </div>
-                  <p className="text-lg text-muted-foreground">{profile.affiliation}</p>
+                  <h1 className="text-3xl font-bold text-foreground mb-1">
+                    {profile.full_name || profile.email}
+                  </h1>
+                  {profile.affiliation && (
+                    <p className="text-muted-foreground">{profile.affiliation}</p>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Verification: <span className="font-medium">{profile.verification_status}</span>
+                  </p>
                 </div>
-
-                <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{profile.location}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <LinkIcon className="h-4 w-4" />
-                    <a href={`https://${profile.website}`} className="text-primary hover:underline">
-                      {profile.website}
-                    </a>
-                  </div>
-                </div>
-
-                <p className="text-foreground leading-relaxed">{profile.bio}</p>
-
-                <div className="flex flex-wrap gap-2">
-                  {profile.expertise.map((skill, index) => (
-                    <Badge key={index} variant="secondary">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex gap-4 pt-2">
-                  <Button>
-                    <Users className="h-4 w-4 mr-2" />
-                    Follow
-                  </Button>
-                  <Button variant="outline">Message</Button>
-                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditMode(!editMode)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  {editMode ? "Cancel" : "Edit"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 mt-6 border-t">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">{profile.stats.followers}</div>
-                <div className="text-sm text-muted-foreground">Followers</div>
+            {editMode ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="affiliation">Affiliation</Label>
+                  <Input
+                    id="affiliation"
+                    value={affiliation}
+                    onChange={(e) => setAffiliation(e.target.value)}
+                    placeholder="Your institution or organization"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell us about yourself"
+                    rows={4}
+                  />
+                </div>
+                <Button onClick={handleUpdateProfile}>Save Changes</Button>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">{profile.stats.following}</div>
-                <div className="text-sm text-muted-foreground">Following</div>
+            ) : (
+              <div>
+                {profile.bio && (
+                  <p className="text-foreground leading-relaxed">{profile.bio}</p>
+                )}
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">{profile.stats.endorsements}</div>
-                <div className="text-sm text-muted-foreground">Endorsements</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">{profile.stats.publications}</div>
-                <div className="text-sm text-muted-foreground">Publications</div>
-              </div>
+            )}
+          </Card>
+
+          {/* Posts Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-foreground">Your Research Posts</h2>
+              <Button onClick={() => navigate("/create")}>
+                New Post
+              </Button>
             </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : posts.length === 0 ? (
+              <Card className="p-8 text-center glass-card">
+                <p className="text-muted-foreground mb-4">You haven't created any posts yet</p>
+                <Button onClick={() => navigate("/create")}>
+                  Create Your First Post
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <ResearchCard
+                    key={post.id}
+                    id={post.id}
+                    author={profile.full_name || profile.email}
+                    authorAffiliation={profile.affiliation}
+                    title={post.title}
+                    summary={post.summary}
+                    tags={post.tags || []}
+                    timeAgo={getTimeAgo(post.created_at)}
+                    userId={post.user_id}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-
-          {/* Content Tabs */}
-          <Tabs defaultValue="research" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="research">Research</TabsTrigger>
-              <TabsTrigger value="discussions">Discussions</TabsTrigger>
-              <TabsTrigger value="about">About</TabsTrigger>
-            </TabsList>
-            <TabsContent value="research" className="space-y-6 mt-6">
-              <div className="text-center py-12 text-muted-foreground">
-                Your research posts will appear here
-              </div>
-            </TabsContent>
-            <TabsContent value="discussions" className="mt-6">
-              <div className="text-center py-12 text-muted-foreground">
-                Discussion threads will appear here
-              </div>
-            </TabsContent>
-            <TabsContent value="about" className="mt-6">
-              <div className="bg-card rounded-lg shadow-card p-6">
-                <h3 className="text-xl font-bold mb-4">About</h3>
-                <p className="text-muted-foreground">{profile.bio}</p>
-              </div>
-            </TabsContent>
-          </Tabs>
         </div>
       </main>
     </div>

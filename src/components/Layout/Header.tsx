@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FlaskConical, PenSquare, LayoutDashboard } from "lucide-react";
+import { FlaskConical, PenSquare, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 const Header = () => {
   const location = useLocation();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -41,14 +41,9 @@ const Header = () => {
                 Explore
               </Link>
               {user && (
-                <>
-                  <Link to="/dashboard" className="text-foreground/80 hover:text-foreground transition-colors">
-                    Dashboard
-                  </Link>
-                  <Link to="/profile" className="text-foreground/80 hover:text-foreground transition-colors">
-                    Profile
-                  </Link>
-                </>
+                <Link to="/profile" className="text-foreground/80 hover:text-foreground transition-colors">
+                  Profile
+                </Link>
               )}
             </nav>
 
@@ -61,10 +56,10 @@ const Header = () => {
                       Create Post
                     </Button>
                   </Link>
-                  <Link to="/dashboard">
+                  <Link to="/profile">
                     <Button variant="outline" className="gap-2">
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
+                      <User className="h-4 w-4" />
+                      Profile
                     </Button>
                   </Link>
                 </>
@@ -126,7 +121,7 @@ const Header = () => {
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <LayoutDashboard className="h-8 w-8 text-primary" />
+                  <User className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Build Your Profile</h3>
                 <p className="text-muted-foreground">
