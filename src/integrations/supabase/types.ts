@@ -57,6 +57,13 @@ export type Database = {
             referencedRelation: "research_posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       likes: {
@@ -84,6 +91,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "research_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -227,7 +241,15 @@ export type Database = {
           user_id?: string
           visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "research_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
