@@ -133,6 +133,63 @@ export type Database = {
         }
         Relationships: []
       }
+      research_area_follows: {
+        Row: {
+          created_at: string | null
+          id: string
+          research_area_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          research_area_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          research_area_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_area_follows_research_area_id_fkey"
+            columns: ["research_area_id"]
+            isOneToOne: false
+            referencedRelation: "research_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_area_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_areas: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       research_posts: {
         Row: {
           collaboration_status: string | null
