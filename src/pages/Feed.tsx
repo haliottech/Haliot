@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/Layout/Header";
 import ResearchCard from "@/components/Feed/ResearchCard";
+import ProfileSidebar from "@/components/Feed/ProfileSidebar";
+import TrendingSidebar from "@/components/Feed/TrendingSidebar";
 import { Button } from "@/components/ui/button";
-import { PenSquare, Loader2 } from "lucide-react";
+import { PenSquare, Loader2, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -52,42 +54,69 @@ const Feed = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+    <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">No posts yet. Be the first to share!</p>
-              <Link to="/create">
-                <Button className="gap-2">
-                  <PenSquare className="h-4 w-4" />
-                  Create First Post
+      <main className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Sidebar */}
+          <aside className="lg:col-span-3 space-y-6">
+            <ProfileSidebar />
+          </aside>
+
+          {/* Main Feed */}
+          <div className="lg:col-span-6">
+            <div className="flex gap-3 mb-6">
+              <Link to="/create" className="flex-1">
+                <Button variant="outline" className="w-full gap-2 justify-start">
+                  <Plus className="h-4 w-4" />
+                  Share New Research
                 </Button>
               </Link>
+              <Button className="bg-accent hover:bg-accent/90">
+                Join Now
+              </Button>
+              <Button variant="outline">Post</Button>
+              <Button variant="outline">Promote</Button>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {posts.map((post) => (
-                <ResearchCard
-                  key={post.id}
-                  id={post.id}
-                  author={post.profiles?.full_name || post.profiles?.email || "Anonymous"}
-                  authorAffiliation={post.profiles?.affiliation}
-                  title={post.title}
-                  summary={post.summary}
-                  tags={post.tags || []}
-                  timeAgo={getTimeAgo(post.created_at)}
-                  userId={post.user_id}
-                />
-              ))}
-            </div>
-          )}
+
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">No posts yet. Be the first to share!</p>
+                <Link to="/create">
+                  <Button className="gap-2">
+                    <PenSquare className="h-4 w-4" />
+                    Create First Post
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <ResearchCard
+                    key={post.id}
+                    id={post.id}
+                    author={post.profiles?.full_name || post.profiles?.email || "Anonymous"}
+                    authorAffiliation={post.profiles?.affiliation}
+                    title={post.title}
+                    summary={post.summary}
+                    tags={post.tags || []}
+                    timeAgo={getTimeAgo(post.created_at)}
+                    userId={post.user_id}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <aside className="lg:col-span-3">
+            <TrendingSidebar />
+          </aside>
         </div>
       </main>
     </div>

@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ThumbsUp, MessageCircle, Bookmark, UserPlus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -147,61 +148,60 @@ const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, tim
   };
 
   return (
-    <Card className="p-6 glass-card hover:shadow-elegant transition-all">
-      <div className="flex gap-4">
-        <Avatar className="h-12 w-12">
-          <AvatarFallback>{author.charAt(0)}</AvatarFallback>
+    <Card className="p-5 hover:shadow-card-hover transition-all">
+      <div className="flex gap-3">
+        <Avatar className="h-10 w-10 bg-muted">
+          <AvatarFallback className="text-sm">{author.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <div className="mb-2">
-            <h3 className="font-semibold text-lg">{author}</h3>
-            {authorAffiliation && (
-              <p className="text-sm text-muted-foreground">{authorAffiliation}</p>
-            )}
-            <p className="text-xs text-muted-foreground">{timeAgo}</p>
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-sm">{author}</h3>
+                {authorAffiliation && (
+                  <span className="text-xs text-muted-foreground">({authorAffiliation})</span>
+                )}
+              </div>
+              <Badge variant="secondary" className="text-xs bg-accent/20 text-accent border-0 mt-1">
+                ACTIVE
+              </Badge>
+            </div>
           </div>
 
-          <h2 className="text-xl font-bold mb-2 text-foreground">{title}</h2>
-          <p className="text-muted-foreground mb-4">{summary}</p>
+          <h2 className="text-base font-bold mb-2 text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{summary}</p>
 
-          <div className="flex gap-2 mb-4 flex-wrap">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm hover:bg-primary/20 transition-colors cursor-pointer"
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <div className="flex items-center gap-4 text-sm">
+              <button
+                onClick={handleLike}
+                className={`flex items-center gap-1.5 hover:text-accent transition-colors ${
+                  isLiked ? "text-accent" : "text-muted-foreground"
+                }`}
               >
-                #{tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-6 pt-4 border-t border-border/40">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLike}
-              className={`gap-2 ${isLiked ? "text-accent" : ""}`}
-            >
-              <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-              {likesCount}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowComments(!showComments)}
-              className="gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              {commentsCount}
-            </Button>
-            <Button variant="ghost" size="sm" className="gap-2">
-              <Share2 className="h-4 w-4" />
-              Share
+                <ThumbsUp className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
+                <span>{likesCount} Likes</span>
+              </button>
+              <button
+                onClick={() => setShowComments(!showComments)}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>{commentsCount} Endorse ({commentsCount} Credit)</span>
+              </button>
+              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors">
+                <Bookmark className="h-4 w-4" />
+                <span>Save</span>
+              </button>
+            </div>
+            <Button size="sm" className="bg-accent hover:bg-accent/90 gap-1.5">
+              <UserPlus className="h-3.5 w-3.5" />
+              Connect
             </Button>
           </div>
 
           {showComments && (
-            <div className="mt-4 pt-4 border-t border-border/40">
+            <div className="mt-4 pt-4 border-t border-border">
               {currentUser && (
                 <div className="mb-4">
                   <Textarea
@@ -216,11 +216,11 @@ const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, tim
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                  <div key={comment.id} className="flex gap-2">
+                    <Avatar className="h-7 w-7 bg-muted">
+                      <AvatarFallback className="text-xs">
                         {(comment.profiles?.full_name || comment.profiles?.email)?.charAt(0) || "?"}
                       </AvatarFallback>
                     </Avatar>

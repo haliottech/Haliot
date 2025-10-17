@@ -8,56 +8,56 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Haliot Design System - Academic Research Platform */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Haliot Design System - Warm Academic Theme */
+    --background: 25 40% 97%;
+    --foreground: 20 20% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 20 20% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 20 20% 20%;
 
-    /* Deep Academic Blue */
-    --primary: 217 91% 35%;
+    /* Coral Primary - Academic Warmth */
+    --primary: 16 88% 58%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 217 91% 45%;
-    --primary-dark: 217 91% 25%;
+    --primary-light: 16 88% 68%;
+    --primary-dark: 16 88% 48%;
 
-    /* Warm Coral Accent - Collaboration */
-    --accent: 14 90% 60%;
+    /* Warm Coral Accent */
+    --accent: 16 88% 58%;
     --accent-foreground: 0 0% 100%;
-    --accent-light: 14 90% 70%;
+    --accent-light: 16 88% 68%;
 
     /* Verified Green */
     --verified: 142 76% 36%;
     --verified-light: 142 76% 96%;
 
     /* Neutral Backgrounds */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 25 30% 94%;
+    --secondary-foreground: 20 20% 20%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 25 20% 90%;
+    --muted-foreground: 20 15% 45%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 35%;
+    --border: 25 20% 88%;
+    --input: 25 20% 88%;
+    --ring: 16 88% 58%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 35%), hsl(217 91% 45%));
-    --gradient-accent: linear-gradient(135deg, hsl(14 90% 60%), hsl(14 90% 70%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 35%) 0%, hsl(217 91% 45%) 50%, hsl(14 90% 60%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(16 88% 58%), hsl(16 88% 68%));
+    --gradient-accent: linear-gradient(135deg, hsl(16 88% 58%), hsl(16 88% 68%));
+    --gradient-hero: linear-gradient(135deg, hsl(16 88% 58%) 0%, hsl(16 88% 68%) 100%);
 
     /* Shadows */
-    --shadow-card: 0 2px 8px hsl(222 47% 11% / 0.08);
-    --shadow-card-hover: 0 4px 16px hsl(222 47% 11% / 0.12);
-    --shadow-elevated: 0 8px 24px hsl(222 47% 11% / 0.15);
+    --shadow-card: 0 2px 8px hsl(20 20% 20% / 0.08);
+    --shadow-card-hover: 0 4px 16px hsl(20 20% 20% / 0.12);
+    --shadow-elevated: 0 8px 24px hsl(20 20% 20% / 0.15);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
