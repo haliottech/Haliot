@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User } from "@supabase/supabase-js";
 import Header from "@/components/Layout/Header";
-import { FileText, MessageCircle } from "lucide-react";
+import { FileText, MessageCircle, Camera } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -21,6 +21,12 @@ const Profile = () => {
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [stats, setStats] = useState({
+    followers: 0,
+    following: 0,
+    publications: 0
+  });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -105,8 +111,53 @@ const Profile = () => {
 
     if (!error && data) {
       setUserPosts(data);
+      setStats(prev => ({ ...prev, publications: data.length }));
     }
     setLoading(false);
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Success",
+        description: "Profile photo updated!",
+      });
+
+      fetchProfile();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleUpdateProfile = async () => {
@@ -174,11 +225,28 @@ const Profile = () => {
             <Card className="p-6 h-fit">
               <h3 className="font-semibold mb-6 text-center">Profile Overview</h3>
               <div className="flex flex-col items-center text-center">
-                <Avatar className="h-32 w-32 mb-4 bg-accent/20">
-                  <AvatarFallback className="text-4xl bg-accent/20 text-accent">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative mb-4">
+                  <Avatar className="h-32 w-32 bg-accent/20">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="object-cover w-full h-full" />
+                    ) : (
+                      <AvatarFallback className="text-4xl bg-accent/20 text-accent">
+                        {initials}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 cursor-pointer hover:bg-primary/90">
+                    <Camera className="h-4 w-4" />
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
                 
                 {editMode ? (
                   <div className="space-y-4 w-full">
@@ -235,15 +303,15 @@ const Profile = () => {
                     <div className="grid grid-cols-2 gap-4 mb-6 w-full text-center">
                       <div>
                         <p className="text-sm text-muted-foreground">Followers</p>
-                        <p className="font-semibold">Euroshiny</p>
+                        <p className="font-semibold">{stats.followers}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Following</p>
-                        <p className="font-semibold">Reliability</p>
+                        <p className="font-semibold">{stats.following}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Publications</p>
-                        <p className="font-semibold">{userPosts.length}</p>
+                        <p className="font-semibold">{stats.publications}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Diversities</p>

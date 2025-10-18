@@ -10,6 +10,7 @@ import CreatePost from "./pages/CreatePost";
 import Auth from "./pages/Auth";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import Footer from "./components/Layout/Footer";
 
 const queryClient = new QueryClient();
 
@@ -19,16 +20,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Feed />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/create" element={<CreatePost />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/auth" element={<Auth />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div className="flex flex-col min-h-screen">
+          <Routes>
+            <Route path="/" element={<Feed />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/create" element={<CreatePost />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/auth" element={<Auth />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Footer />
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

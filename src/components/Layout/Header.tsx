@@ -4,22 +4,50 @@ import { FlaskConical, Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Header = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    
+    if (data) {
+      setProfile(data);
+    }
+  };
+
+  const getInitials = (name?: string, email?: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    }
+    return email?.charAt(0).toUpperCase() || 'U';
+  };
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-50">
@@ -42,11 +70,15 @@ const Header = () => {
             </button>
             {user ? (
               <Link to="/profile" className="flex items-center gap-2">
-                <span className="text-sm">Hi, User!</span>
+                <span className="text-sm">Hi, {profile?.full_name?.split(' ')[0] || 'User'}!</span>
                 <Avatar className="h-8 w-8 bg-accent/20">
-                  <AvatarFallback className="bg-accent/20 text-accent text-xs">
-                    U
-                  </AvatarFallback>
+                  {profile?.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} alt="Avatar" />
+                  ) : (
+                    <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                      {getInitials(profile?.full_name, profile?.email)}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
               </Link>
             ) : (

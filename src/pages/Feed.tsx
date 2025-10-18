@@ -73,11 +73,14 @@ const Feed = () => {
                   Share New Research
                 </Button>
               </Link>
-              <Button className="bg-accent hover:bg-accent/90">
-                Join Now
-              </Button>
-              <Button variant="outline">Post</Button>
-              <Button variant="outline">Promote</Button>
+              <Link to="/auth">
+                <Button className="bg-accent hover:bg-accent/90">
+                  Join Now
+                </Button>
+              </Link>
+              <Link to="/create">
+                <Button variant="outline">Post</Button>
+              </Link>
             </div>
 
             {loading ? (

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { useNavigate } from "react-router-dom";
 
 interface ResearchCardProps {
   id: string;
@@ -20,6 +21,7 @@ interface ResearchCardProps {
 }
 
 const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, timeAgo, userId }: ResearchCardProps) => {
+  const navigate = useNavigate();
   const [likesCount, setLikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -147,6 +149,17 @@ const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, tim
     }
   };
 
+  const handleConnect = () => {
+    if (!currentUser) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to connect",
+      });
+      return;
+    }
+    navigate("/chat");
+  };
+
   return (
     <Card className="p-5 hover:shadow-card-hover transition-all">
       <div className="flex gap-3">
@@ -194,7 +207,7 @@ const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, tim
                 <span>Save</span>
               </button>
             </div>
-            <Button size="sm" className="bg-accent hover:bg-accent/90 gap-1.5">
+            <Button size="sm" className="bg-accent hover:bg-accent/90 gap-1.5" onClick={handleConnect}>
               <UserPlus className="h-3.5 w-3.5" />
               Connect
             </Button>
