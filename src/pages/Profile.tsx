@@ -1,28 +1,26 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-import Header from "@/components/Layout/Header";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, LogOut, Edit } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import ResearchCard from "@/components/Feed/ResearchCard";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User } from "@supabase/supabase-js";
+import Header from "@/components/Layout/Header";
+import { FileText, MessageCircle } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [affiliation, setAffiliation] = useState("");
-  const [bio, setBio] = useState("");
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -47,7 +45,6 @@ const Profile = () => {
       fetchProfile();
       fetchUserPosts();
 
-      // Realtime subscription for profile updates
       const profileChannel = supabase
         .channel('profile-changes')
         .on(
@@ -58,14 +55,10 @@ const Profile = () => {
             table: 'profiles',
             filter: `id=eq.${user.id}`
           },
-          (payload) => {
-            console.log('Profile updated:', payload);
-            fetchProfile();
-          }
+          () => fetchProfile()
         )
         .subscribe();
 
-      // Realtime subscription for posts updates
       const postsChannel = supabase
         .channel('posts-changes')
         .on(
@@ -76,10 +69,7 @@ const Profile = () => {
             table: 'research_posts',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
-            console.log('Posts updated:', payload);
-            fetchUserPosts();
-          }
+          () => fetchUserPosts()
         )
         .subscribe();
 
@@ -99,30 +89,22 @@ const Profile = () => {
       .eq("id", user.id)
       .single();
 
-    if (error) {
-      console.error("Error fetching profile:", error);
-    } else {
+    if (!error && data) {
       setProfile(data);
-      setFullName(data.full_name || "");
-      setAffiliation(data.affiliation || "");
-      setBio(data.bio || "");
     }
   };
 
   const fetchUserPosts = async () => {
     if (!user) return;
     
-    setLoading(true);
     const { data, error } = await supabase
       .from("research_posts")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching posts:", error);
-    } else {
-      setPosts(data || []);
+    if (!error && data) {
+      setUserPosts(data);
     }
     setLoading(false);
   };
@@ -133,9 +115,9 @@ const Profile = () => {
     const { error } = await supabase
       .from("profiles")
       .update({
-        full_name: fullName,
-        affiliation: affiliation,
-        bio: bio,
+        full_name: profile?.full_name,
+        affiliation: profile?.affiliation,
+        bio: profile?.bio,
       })
       .eq("id", user.id);
 
@@ -173,138 +155,173 @@ const Profile = () => {
     return `${diffDays} days ago`;
   };
 
-  if (!user || !profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 
+                   profile?.email?.charAt(0).toUpperCase() || 'U';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+    <>
       <Header />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="space-y-8">
-          {/* Profile Header */}
-          <Card className="p-6 glass-card">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex gap-4 items-start">
-                <Avatar className="h-20 w-20">
-                  <AvatarFallback className="text-2xl">
-                    {(profile.full_name || profile.email || "?").charAt(0).toUpperCase()}
+      <div className="max-w-7xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          User Profile {profile?.full_name || 'Profile'}
+        </h1>
+
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Profile Overview */}
+            <Card className="p-6 h-fit">
+              <h3 className="font-semibold mb-6 text-center">Profile Overview</h3>
+              <div className="flex flex-col items-center text-center">
+                <Avatar className="h-32 w-32 mb-4 bg-accent/20">
+                  <AvatarFallback className="text-4xl bg-accent/20 text-accent">
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground mb-1">
-                    {profile.full_name || profile.email}
-                  </h1>
-                  {profile.affiliation && (
-                    <p className="text-muted-foreground">{profile.affiliation}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Verification: <span className="font-medium">{profile.verification_status}</span>
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditMode(!editMode)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  {editMode ? "Cancel" : "Edit"}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
-            </div>
+                
+                {editMode ? (
+                  <div className="space-y-4 w-full">
+                    <Input
+                      value={profile?.full_name || ""}
+                      onChange={(e) =>
+                        setProfile((prev: any) => ({
+                          ...prev,
+                          full_name: e.target.value,
+                        }))
+                      }
+                      placeholder="Full Name"
+                    />
+                    <Input
+                      value={profile?.affiliation || ""}
+                      onChange={(e) =>
+                        setProfile((prev: any) => ({
+                          ...prev,
+                          affiliation: e.target.value,
+                        }))
+                      }
+                      placeholder="Affiliation"
+                    />
+                    <Textarea
+                      value={profile?.bio || ""}
+                      onChange={(e) =>
+                        setProfile((prev: any) => ({
+                          ...prev,
+                          bio: e.target.value,
+                        }))
+                      }
+                      placeholder="Bio"
+                      rows={4}
+                    />
+                    <Button onClick={handleUpdateProfile} className="w-full">
+                      Save Changes
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditMode(false)} className="w-full">
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-bold mb-1">
+                      {profile?.full_name || "User"} (Me)
+                    </h2>
+                    <p className="text-muted-foreground text-sm mb-3">
+                      {profile?.affiliation || "IADT"}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-6 px-4">
+                      {profile?.bio || "Top Groups lecture leader. Like fishing and AI innovations."}
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-6 w-full text-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Followers</p>
+                        <p className="font-semibold">Euroshiny</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Following</p>
+                        <p className="font-semibold">Reliability</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Publications</p>
+                        <p className="font-semibold">{userPosts.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Diversities</p>
+                        <p className="font-semibold">0</p>
+                      </div>
+                    </div>
 
-            {editMode ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your full name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="affiliation">Affiliation</Label>
-                  <Input
-                    id="affiliation"
-                    value={affiliation}
-                    onChange={(e) => setAffiliation(e.target.value)}
-                    placeholder="Your institution or organization"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell us about yourself"
-                    rows={4}
-                  />
-                </div>
-                <Button onClick={handleUpdateProfile}>Save Changes</Button>
-              </div>
-            ) : (
-              <div>
-                {profile.bio && (
-                  <p className="text-foreground leading-relaxed">{profile.bio}</p>
+                    <div className="flex gap-2 w-full">
+                      <Button variant="outline" className="flex-1" onClick={() => navigate("/chat")}>
+                        Contact
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => navigate("/chat")}>
+                        Message
+                      </Button>
+                    </div>
+                    
+                    <div className="flex gap-2 w-full mt-2">
+                      <Button variant="outline" onClick={() => setEditMode(true)} className="flex-1">
+                        Edit Profile
+                      </Button>
+                      <Button variant="destructive" onClick={handleSignOut} className="flex-1">
+                        Sign Out
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
-            )}
-          </Card>
+            </Card>
 
-          {/* Posts Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-foreground">Your Research Posts</h2>
-              <Button onClick={() => navigate("/create")}>
-                New Post
-              </Button>
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : posts.length === 0 ? (
-              <Card className="p-8 text-center glass-card">
-                <p className="text-muted-foreground mb-4">You haven't created any posts yet</p>
-                <Button onClick={() => navigate("/create")}>
-                  Create Your First Post
-                </Button>
+            {/* Middle Column - Publications */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="p-6">
+                <Tabs defaultValue="publications">
+                  <TabsList className="mb-6">
+                    <TabsTrigger value="publications">Publications</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="publications" className="space-y-4">
+                    {userPosts.map((post) => (
+                      <div key={post.id} className="flex gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-20 bg-muted rounded flex items-center justify-center">
+                            <FileText className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold mb-1 line-clamp-2">{post.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {post.summary}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{profile?.full_name || "Unknown"}</span>
+                            <span>•</span>
+                            <span>{getTimeAgo(post.created_at)}</span>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon">
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {userPosts.length === 0 && (
+                      <div className="text-center py-12">
+                        <p className="text-muted-foreground mb-4">No publications yet</p>
+                        <Button onClick={() => navigate("/create")}>
+                          Create Your First Post
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </Card>
-            ) : (
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <ResearchCard
-                    key={post.id}
-                    id={post.id}
-                    author={profile.full_name || profile.email}
-                    authorAffiliation={profile.affiliation}
-                    title={post.title}
-                    summary={post.summary}
-                    tags={post.tags || []}
-                    timeAgo={getTimeAgo(post.created_at)}
-                    userId={post.user_id}
-                  />
-                ))}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 
