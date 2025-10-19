@@ -13,6 +13,7 @@ interface ResearchCardProps {
   id: string;
   author: string;
   authorAffiliation?: string;
+  authorAvatar?: string;
   title: string;
   summary: string;
   tags: string[];
@@ -20,7 +21,7 @@ interface ResearchCardProps {
   userId?: string;
 }
 
-const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, timeAgo, userId }: ResearchCardProps) => {
+const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summary, tags, timeAgo, userId }: ResearchCardProps) => {
   const navigate = useNavigate();
   const [likesCount, setLikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
@@ -164,7 +165,11 @@ const ResearchCard = ({ id, author, authorAffiliation, title, summary, tags, tim
     <Card className="p-5 hover:shadow-card-hover transition-all">
       <div className="flex gap-3">
         <Avatar className="h-10 w-10 bg-muted">
-          <AvatarFallback className="text-sm">{author.charAt(0)}</AvatarFallback>
+          {authorAvatar ? (
+            <img src={authorAvatar} alt={author} className="object-cover w-full h-full" />
+          ) : (
+            <AvatarFallback className="text-sm">{author.charAt(0)}</AvatarFallback>
+          )}
         </Avatar>
         <div className="flex-1">
           <div className="flex items-start justify-between mb-2">

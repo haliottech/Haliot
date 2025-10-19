@@ -199,41 +199,72 @@ const Chat = () => {
   const startConversation = async (otherUserId: string) => {
     if (!currentUserId) return;
 
-    // Create conversation
-    const { data: conv, error: convError } = await supabase
-      .from("conversations")
-      .insert({})
-      .select()
-      .single();
+    try {
+      console.log('Starting conversation with user:', otherUserId);
+      
+      // Create conversation
+      const { data: conv, error: convError } = await supabase
+        .from("conversations")
+        .insert({})
+        .select()
+        .single();
 
-    if (convError || !conv) {
+      if (convError) {
+        console.error('Conversation creation error:', convError);
+        toast({
+          title: "Error",
+          description: "Failed to create conversation: " + convError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!conv) {
+        console.error('No conversation returned');
+        toast({
+          title: "Error",
+          description: "Failed to create conversation",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Conversation created:', conv.id);
+
+      // Add participants
+      const { error: partError } = await supabase
+        .from("conversation_participants")
+        .insert([
+          { conversation_id: conv.id, user_id: currentUserId },
+          { conversation_id: conv.id, user_id: otherUserId }
+        ]);
+
+      if (partError) {
+        console.error('Participants error:', partError);
+        toast({
+          title: "Error",
+          description: "Failed to add participants: " + partError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Participants added successfully');
+      await fetchConversations(currentUserId);
+      setSelectedConversation(conv.id);
+      
+      toast({
+        title: "Success",
+        description: "Conversation started successfully",
+      });
+    } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
-        description: "Failed to create conversation",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
-      return;
     }
-
-    // Add participants
-    const { error: partError } = await supabase
-      .from("conversation_participants")
-      .insert([
-        { conversation_id: conv.id, user_id: currentUserId },
-        { conversation_id: conv.id, user_id: otherUserId }
-      ]);
-
-    if (partError) {
-      toast({
-        title: "Error",
-        description: "Failed to add participants",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    await fetchConversations(currentUserId);
-    setSelectedConversation(conv.id);
   };
 
   const getInitials = (name: string) => {

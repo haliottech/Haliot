@@ -3,9 +3,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const ProfileSidebar = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,11 @@ const ProfileSidebar = () => {
         <h4 className="font-semibold mb-3 text-sm">Suggested Connections</h4>
         <div className="space-y-3">
           {suggestedUsers.map((user) => (
-            <div key={user.id} className="flex items-center gap-2">
+            <div 
+              key={user.id} 
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => navigate('/chat')}
+            >
               <Avatar className="h-8 w-8 bg-muted">
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt="Avatar" className="object-cover w-full h-full" />
@@ -103,6 +108,9 @@ const ProfileSidebar = () => {
               </Avatar>
               <div className="flex-1 text-sm">
                 <p className="font-medium">{user.full_name || user.email}</p>
+                {user.affiliation && (
+                  <p className="text-xs text-muted-foreground">{user.affiliation}</p>
+                )}
               </div>
             </div>
           ))}

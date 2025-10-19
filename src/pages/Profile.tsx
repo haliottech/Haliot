@@ -293,12 +293,26 @@ const Profile = () => {
                     <h2 className="text-xl font-bold mb-1">
                       {profile?.full_name || "User"} (Me)
                     </h2>
-                    <p className="text-muted-foreground text-sm mb-3">
-                      {profile?.affiliation || "IADT"}
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-6 px-4">
-                      {profile?.bio || "Top Groups lecture leader. Like fishing and AI innovations."}
-                    </p>
+                    {profile?.affiliation && (
+                      <p className="text-muted-foreground mb-2">
+                        {profile.affiliation}
+                      </p>
+                    )}
+                    {profile?.bio && (
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {profile.bio}
+                      </p>
+                    )}
+                    {profile?.linkedin_url && (
+                      <a 
+                        href={profile.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline mb-4 inline-block"
+                      >
+                        LinkedIn Profile
+                      </a>
+                    )}
                     
                     <div className="grid grid-cols-2 gap-4 mb-6 w-full text-center">
                       <div>

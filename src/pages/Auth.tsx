@@ -17,6 +17,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ const Auth = () => {
         options: {
           data: {
             full_name: fullName,
+            linkedin_url: linkedinUrl,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -104,19 +106,33 @@ const Auth = () => {
 
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium mb-2">
-                Full Name
-              </label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe"
-                required={isSignUp}
-              />
-            </div>
+            <>
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium mb-2">
+                  Full Name
+                </label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
+                  required={isSignUp}
+                />
+              </div>
+              <div>
+                <label htmlFor="linkedinUrl" className="block text-sm font-medium mb-2">
+                  LinkedIn Profile URL
+                </label>
+                <Input
+                  id="linkedinUrl"
+                  type="url"
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  placeholder="https://linkedin.com/in/yourprofile"
+                />
+              </div>
+            </>
           )}
 
           <div>

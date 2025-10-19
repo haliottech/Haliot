@@ -282,6 +282,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          linkedin_url: string | null
           updated_at: string | null
           verification_status:
             | Database["public"]["Enums"]["verification_status"]
@@ -296,6 +297,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          linkedin_url?: string | null
           updated_at?: string | null
           verification_status?:
             | Database["public"]["Enums"]["verification_status"]
@@ -310,6 +312,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          linkedin_url?: string | null
           updated_at?: string | null
           verification_status?:
             | Database["public"]["Enums"]["verification_status"]

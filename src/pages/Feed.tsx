@@ -23,7 +23,7 @@ const Feed = () => {
       .from("research_posts")
       .select(`
         *,
-        profiles (full_name, email, affiliation)
+        profiles (full_name, email, affiliation, avatar_url)
       `)
       .order("created_at", { ascending: false });
 
@@ -73,11 +73,6 @@ const Feed = () => {
                   Share New Research
                 </Button>
               </Link>
-              <Link to="/auth">
-                <Button className="bg-accent hover:bg-accent/90">
-                  Join Now
-                </Button>
-              </Link>
               <Link to="/create">
                 <Button variant="outline">Post</Button>
               </Link>
@@ -105,6 +100,7 @@ const Feed = () => {
                     id={post.id}
                     author={post.profiles?.full_name || post.profiles?.email || "Anonymous"}
                     authorAffiliation={post.profiles?.affiliation}
+                    authorAvatar={post.profiles?.avatar_url}
                     title={post.title}
                     summary={post.summary}
                     tags={post.tags || []}
