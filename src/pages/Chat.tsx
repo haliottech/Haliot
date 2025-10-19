@@ -14,6 +14,7 @@ interface Profile {
   id: string;
   full_name: string;
   affiliation: string;
+  avatar_url?: string;
 }
 
 interface Message {
@@ -106,10 +107,10 @@ const Chat = () => {
 
     const conversationsWithDetails = await Promise.all(
       participants.map(async (p: any) => {
-        // Get other participant
+        // Get other participant with avatar
         const { data: otherParticipant } = await supabase
           .from("conversation_participants")
-          .select("user_id, profiles(*)")
+          .select("user_id, profiles(id, full_name, affiliation, avatar_url)")
           .eq("conversation_id", p.conversation_id)
           .neq("user_id", userId)
           .single();
@@ -149,7 +150,7 @@ const Chat = () => {
   const fetchOtherUsers = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, full_name, affiliation, avatar_url")
       .neq("id", userId)
       .limit(5);
 
@@ -299,9 +300,13 @@ const Chat = () => {
                       }`}
                     >
                       <Avatar className="h-10 w-10 bg-accent/20">
-                        <AvatarFallback className="bg-accent/20 text-accent">
-                          {getInitials(conv.other_participant?.full_name || 'U')}
-                        </AvatarFallback>
+                        {conv.other_participant?.avatar_url ? (
+                          <img src={conv.other_participant.avatar_url} alt={conv.other_participant.full_name} className="object-cover w-full h-full" />
+                        ) : (
+                          <AvatarFallback className="bg-accent/20 text-accent">
+                            {getInitials(conv.other_participant?.full_name || 'U')}
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">{conv.other_participant?.full_name}</p>
@@ -339,9 +344,13 @@ const Chat = () => {
               <>
                 <div className="flex items-center gap-3 pb-4 border-b mb-4">
                   <Avatar className="h-10 w-10 bg-accent/20">
-                    <AvatarFallback className="bg-accent/20 text-accent">
-                      {getInitials(selectedConvData.other_participant?.full_name || 'U')}
-                    </AvatarFallback>
+                    {selectedConvData.other_participant?.avatar_url ? (
+                      <img src={selectedConvData.other_participant.avatar_url} alt={selectedConvData.other_participant.full_name} className="object-cover w-full h-full" />
+                    ) : (
+                      <AvatarFallback className="bg-accent/20 text-accent">
+                        {getInitials(selectedConvData.other_participant?.full_name || 'U')}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div>
                     <p className="font-semibold">{selectedConvData.other_participant?.full_name}</p>
@@ -403,9 +412,13 @@ const Chat = () => {
               {otherUsers.map((user) => (
                 <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted">
                   <Avatar className="h-10 w-10 bg-accent/20">
-                    <AvatarFallback className="bg-accent/20 text-accent">
-                      {getInitials(user.full_name)}
-                    </AvatarFallback>
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt={user.full_name} className="object-cover w-full h-full" />
+                    ) : (
+                      <AvatarFallback className="bg-accent/20 text-accent">
+                        {getInitials(user.full_name)}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-medium text-sm">{user.full_name}</p>
@@ -425,7 +438,15 @@ const Chat = () => {
               <Button variant="outline" className="w-full" onClick={() => navigate("/profile")}>
                 View Profile
               </Button>
-              <Button className="w-full">
+              <Button 
+                className="w-full"
+                onClick={() => {
+                  toast({
+                    title: "Coming Soon",
+                    description: "Collaboration feature will be available soon!",
+                  });
+                }}
+              >
                 Start Collaboration
               </Button>
             </div>
