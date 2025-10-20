@@ -206,7 +206,7 @@ const Chat = () => {
       // Create conversation
       const { data: conv, error: convError } = await supabase
         .from("conversations")
-        .insert({})
+        .insert({ created_by: currentUserId } as any)
         .select()
         .single();
 
