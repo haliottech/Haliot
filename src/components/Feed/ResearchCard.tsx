@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
+import { createLikeNotification } from "@/utils/notifications";
 
 interface ResearchCardProps {
   id: string;
@@ -30,14 +31,21 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+        fetchCurrentUserProfile(session.user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+        fetchCurrentUserProfile(session.user.id);
+      }
     });
 
     fetchLikes();
@@ -45,6 +53,18 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
 
     return () => subscription.unsubscribe();
   }, [id]);
+
+  const fetchCurrentUserProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .single();
+    
+    if (data) {
+      setCurrentUserProfile(data);
+    }
+  };
 
   const fetchLikes = async () => {
     const { data, error } = await supabase
@@ -105,6 +125,18 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
       if (!error) {
         setIsLiked(true);
         setLikesCount(likesCount + 1);
+        
+        // Create notification for post owner if it's not their own post
+        if (userId && userId !== currentUser.id && currentUserProfile?.full_name) {
+          setTimeout(() => {
+            createLikeNotification(
+              userId,
+              currentUserProfile.full_name,
+              id,
+              currentUser.id
+            );
+          }, 0);
+        }
       } else {
         toast({
           title: "Error",

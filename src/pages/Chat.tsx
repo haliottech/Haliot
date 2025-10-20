@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import Header from "@/components/Layout/Header";
+import { createMessageNotification } from "@/utils/notifications";
 
 interface Profile {
   id: string;
@@ -192,6 +193,27 @@ const Chat = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Get recipient info and create notification
+    const selectedConv = conversations.find(c => c.id === selectedConversation);
+    if (selectedConv?.other_participant?.id) {
+      const { data: senderProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", currentUserId)
+        .single();
+      
+      if (senderProfile?.full_name) {
+        setTimeout(() => {
+          createMessageNotification(
+            selectedConv.other_participant!.id,
+            senderProfile.full_name,
+            selectedConversation,
+            currentUserId
+          );
+        }, 0);
+      }
     }
 
     setNewMessage("");

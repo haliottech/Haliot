@@ -51,22 +51,17 @@ const Footer = () => {
             <h3 className="font-semibold mb-3">Resources</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/about" className="hover:text-accent transition-colors">
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
-                  Guidelines
-                </a>
+                <Link to="/chat" className="hover:text-accent transition-colors">
+                  Messages
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <a href="mailto:contact@haliot.com" className="hover:text-accent transition-colors">
                   Contact
                 </a>
               </li>
@@ -78,19 +73,19 @@ const Footer = () => {
             <h3 className="font-semibold mb-3">Legal</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/privacy" className="hover:text-accent transition-colors">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/terms" className="hover:text-accent transition-colors">
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-accent transition-colors">
+                <Link to="/cookies" className="hover:text-accent transition-colors">
                   Cookie Policy
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

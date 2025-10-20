@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FlaskConical, Bell } from "lucide-react";
+import { FlaskConical, MessageSquare, Compass } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NotificationDropdown from "@/components/Notifications/NotificationDropdown";
 
 const Header = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -60,14 +61,19 @@ const Header = () => {
             <span className="text-lg font-bold text-foreground">Haliot Research</span>
           </Link>
           
-          <div className="text-lg font-semibold text-foreground">
-            Haliot Research Social Feed
-          </div>
+          <nav className="flex items-center gap-6">
+            <Link to="/explore" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <Compass className="h-5 w-5" />
+              <span className="font-medium">Explore</span>
+            </Link>
+            <Link to="/chat" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <MessageSquare className="h-5 w-5" />
+              <span className="font-medium">Messages</span>
+            </Link>
+          </nav>
 
           <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-muted rounded-lg transition-colors">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-            </button>
+            {user && <NotificationDropdown />}
             {user ? (
               <Link to="/profile" className="flex items-center gap-2">
                 <span className="text-sm">Hi, {profile?.full_name?.split(' ')[0] || 'User'}!</span>
