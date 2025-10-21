@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { X, Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -21,6 +21,7 @@ const CreatePost = () => {
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [loading, setLoading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,6 +52,22 @@ const CreatePost = () => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "File size must be less than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setUploadedFile(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -74,6 +91,36 @@ const CreatePost = () => {
 
     setLoading(true);
 
+    let documentUrl = null;
+
+    // Upload file if present
+    if (uploadedFile) {
+      const fileExt = uploadedFile.name.split('.').pop();
+      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+      const filePath = `documents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('research-documents')
+        .upload(filePath, uploadedFile);
+
+      if (uploadError) {
+        console.error("Error uploading file:", uploadError);
+        toast({
+          title: "Error",
+          description: "Failed to upload document",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('research-documents')
+        .getPublicUrl(filePath);
+
+      documentUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase
       .from("research_posts")
       .insert({
@@ -81,6 +128,7 @@ const CreatePost = () => {
         title: title.trim(),
         summary: summary.trim(),
         full_text_link: fullTextLink.trim() || null,
+        document_url: documentUrl,
         tags,
         visibility,
       });
@@ -156,6 +204,39 @@ const CreatePost = () => {
                     onChange={(e) => setFullTextLink(e.target.value)}
                     placeholder="https://..."
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="document">Upload Document (Optional)</Label>
+                  <div className="flex items-center gap-4">
+                    <label htmlFor="document" className="cursor-pointer">
+                      <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors">
+                        <Upload className="h-4 w-4" />
+                        <span className="text-sm">Choose File</span>
+                      </div>
+                      <input
+                        id="document"
+                        type="file"
+                        accept=".pdf,.doc,.docx,.txt"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {uploadedFile && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileText className="h-4 w-4" />
+                        <span>{uploadedFile.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setUploadedFile(null)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, or TXT (max 10MB)</p>
                 </div>
 
                 <div className="space-y-2">

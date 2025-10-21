@@ -237,7 +237,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                 className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors"
               >
                 <MessageCircle className="h-4 w-4" />
-                <span>{commentsCount} Endorse ({commentsCount} Credit)</span>
+                <span>{commentsCount} Comments</span>
               </button>
               <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors">
                 <Bookmark className="h-4 w-4" />
