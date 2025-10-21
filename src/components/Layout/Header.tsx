@@ -51,37 +51,37 @@ const Header = () => {
   };
 
   return (
-    <header className="border-b border-border bg-card sticky top-0 z-50">
+    <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="p-1.5 bg-accent/10 rounded">
-              <FlaskConical className="h-5 w-5 text-accent" />
+          <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+            <div className="p-1.5 bg-gradient-primary rounded-lg shadow-gold">
+              <FlaskConical className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-foreground">Haliot Research</span>
+            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">Haliot</span>
           </Link>
           
-          <nav className="flex items-center gap-6">
-            <Link to="/explore" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <nav className="flex items-center gap-6">
+            <Link to="/explore" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-medium">
               <Compass className="h-5 w-5" />
-              <span className="font-medium">Explore</span>
+              <span>Explore</span>
             </Link>
-            <Link to="/chat" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/chat" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-medium">
               <MessageSquare className="h-5 w-5" />
-              <span className="font-medium">Messages</span>
+              <span>Messages</span>
             </Link>
           </nav>
 
           <div className="flex items-center gap-4">
             {user && <NotificationDropdown />}
             {user ? (
-              <Link to="/profile" className="flex items-center gap-2">
-                <span className="text-sm">Hi, {profile?.full_name?.split(' ')[0] || 'User'}!</span>
-                <Avatar className="h-8 w-8 bg-accent/20">
+              <Link to="/profile" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                <span className="text-sm font-medium">{profile?.full_name?.split(' ')[0] || 'User'}</span>
+                <Avatar className="h-9 w-9 ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
                   {profile?.avatar_url ? (
                     <AvatarImage src={profile.avatar_url} alt="Avatar" />
                   ) : (
-                    <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                    <AvatarFallback className="bg-gradient-primary text-white text-xs font-semibold">
                       {getInitials(profile?.full_name, profile?.email)}
                     </AvatarFallback>
                   )}
@@ -89,7 +89,7 @@ const Header = () => {
               </Link>
             ) : (
               <Link to="/auth">
-                <Button size="sm">Sign In</Button>
+                <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-gold">Sign In</Button>
               </Link>
             )}
           </div>

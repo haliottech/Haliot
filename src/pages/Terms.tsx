@@ -14,7 +14,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing and using Haliot Research, you accept and agree to be bound by the terms 
+              By accessing and using Haliot, you accept and agree to be bound by the terms 
               and provision of this agreement. If you do not agree to these terms, please do not use 
               our service.
             </p>
@@ -23,7 +23,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Use License</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Permission is granted to temporarily access the materials on Haliot Research for personal, 
+              Permission is granted to temporarily access the materials on Haliot for personal, 
               non-commercial use only. This is the grant of a license, not a transfer of title.
             </p>
           </section>
@@ -31,7 +31,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">3. User Conduct</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              You agree to use Haliot Research only for lawful purposes and in a way that does not 
+              You agree to use Haliot only for lawful purposes and in a way that does not 
               infringe the rights of, restrict, or inhibit anyone else's use of the platform. 
               Prohibited behavior includes:
             </p>
@@ -47,7 +47,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">4. Content</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Users retain ownership of content they post on Haliot Research. By posting content, 
+              Users retain ownership of content they post on Haliot. By posting content, 
               you grant us a non-exclusive, worldwide, royalty-free license to use, reproduce, and 
               distribute your content on the platform.
             </p>
@@ -64,7 +64,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">6. Disclaimer</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The materials on Haliot Research are provided on an 'as is' basis. We make no warranties, 
+              The materials on Haliot are provided on an 'as is' basis. We make no warranties, 
               expressed or implied, and hereby disclaim all other warranties including, without limitation, 
               implied warranties for a particular purpose.
             </p>

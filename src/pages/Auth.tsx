@@ -94,11 +94,13 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md p-8 glass-card">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-primary/10 p-4">
+      <Card className="w-full max-w-md p-8 shadow-elevated border-border/50">
         <div className="flex flex-col items-center mb-8">
-          <FlaskConical className="h-12 w-12 text-primary mb-2" />
-          <h1 className="text-3xl font-bold text-foreground">Haliot</h1>
+          <div className="p-3 bg-gradient-primary rounded-xl shadow-gold mb-3">
+            <FlaskConical className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">Haliot</h1>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "Create your account" : "Welcome back"}
           </p>
@@ -163,7 +165,7 @@ const Auth = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90 transition-opacity shadow-gold font-semibold" disabled={loading}>
             {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>

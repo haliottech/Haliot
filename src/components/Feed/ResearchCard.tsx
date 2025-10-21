@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, MessageCircle, Bookmark, UserPlus } from "lucide-react";
+import { ThumbsUp, MessageCircle, Bookmark, UserPlus, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -20,9 +20,10 @@ interface ResearchCardProps {
   tags: string[];
   timeAgo: string;
   userId?: string;
+  documentUrl?: string;
 }
 
-const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summary, tags, timeAgo, userId }: ResearchCardProps) => {
+const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summary, tags, timeAgo, userId, documentUrl }: ResearchCardProps) => {
   const navigate = useNavigate();
   const [likesCount, setLikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
@@ -194,7 +195,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   };
 
   return (
-    <Card className="p-5 hover:shadow-card-hover transition-all">
+    <Card className="p-5 hover:shadow-card-hover transition-all duration-300 bg-gradient-to-br from-card via-card to-card/95 border-border/50">
       <div className="flex gap-3">
         <Avatar className="h-10 w-10 bg-muted">
           {authorAvatar ? (
@@ -212,7 +213,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                   <span className="text-xs text-muted-foreground">({authorAffiliation})</span>
                 )}
               </div>
-              <Badge variant="secondary" className="text-xs bg-accent/20 text-accent border-0 mt-1">
+              <Badge variant="secondary" className="text-xs bg-gradient-to-r from-verified/20 to-verified-light text-verified border-0 mt-1 font-semibold">
                 ACTIVE
               </Badge>
             </div>
@@ -220,6 +221,18 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
 
           <h2 className="text-base font-bold mb-2 text-foreground">{title}</h2>
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{summary}</p>
+
+          {documentUrl && (
+            <a
+              href={documentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary-dark transition-colors mb-3"
+            >
+              <FileText className="h-4 w-4" />
+              <span>View Document</span>
+            </a>
+          )}
 
           <div className="flex items-center justify-between pt-3 border-t border-border">
             <div className="flex items-center gap-4 text-sm">
@@ -244,7 +257,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                 <span>Save</span>
               </button>
             </div>
-            <Button size="sm" className="bg-accent hover:bg-accent/90 gap-1.5" onClick={handleConnect}>
+            <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity gap-1.5 shadow-gold font-medium" onClick={handleConnect}>
               <UserPlus className="h-3.5 w-3.5" />
               Connect
             </Button>

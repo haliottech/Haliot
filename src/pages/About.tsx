@@ -6,13 +6,13 @@ const About = () => {
     <>
       <Header />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-4xl font-bold mb-6">About Haliot Research</h1>
+        <h1 className="text-4xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">About Haliot</h1>
         
-        <Card className="p-8 space-y-6">
+        <Card className="p-8 space-y-6 shadow-elevated">
           <section>
             <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Haliot Research is a platform dedicated to connecting researchers, academics, and innovators 
+              Haliot is a platform dedicated to connecting researchers, academics, and innovators 
               from around the world. We believe in fostering collaboration and knowledge sharing to advance 
               scientific discovery and innovation.
             </p>
@@ -37,7 +37,7 @@ const About = () => {
             <p className="text-muted-foreground leading-relaxed">
               Join thousands of researchers, academics, and innovators who are shaping the future of 
               scientific research. Whether you're a student, professor, or industry researcher, Haliot 
-              Research provides the tools and community you need to succeed.
+              provides the tools and community you need to succeed.
             </p>
           </section>
 

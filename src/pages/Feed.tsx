@@ -54,7 +54,7 @@ const Feed = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <Header />
       
       <main className="container mx-auto px-4 py-6">
@@ -106,6 +106,7 @@ const Feed = () => {
                     tags={post.tags || []}
                     timeAgo={getTimeAgo(post.created_at)}
                     userId={post.user_id}
+                    documentUrl={post.document_url}
                   />
                 ))}
               </div>

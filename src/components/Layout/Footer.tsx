@@ -9,10 +9,10 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="p-1.5 bg-accent/10 rounded">
-                <FlaskConical className="h-5 w-5 text-accent" />
+              <div className="p-1.5 bg-gradient-primary rounded-lg shadow-gold">
+                <FlaskConical className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg font-bold text-foreground">Haliot Research</span>
+              <span className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">Haliot</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Connecting researchers and fostering collaboration in the scientific community.
@@ -93,7 +93,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Haliot Research. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Haliot. All rights reserved.</p>
         </div>
       </div>
     </footer>

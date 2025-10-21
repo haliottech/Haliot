@@ -23,7 +23,7 @@ const Cookies = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">How We Use Cookies</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Haliot Research uses cookies for the following purposes:
+              Haliot uses cookies for the following purposes:
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
               <li><strong>Essential Cookies:</strong> Required for the website to function properly, including authentication and security</li>
@@ -74,7 +74,7 @@ const Cookies = () => {
               <li>You can set your browser to notify you when cookies are being sent</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              Please note that disabling cookies may affect the functionality of Haliot Research and 
+              Please note that disabling cookies may affect the functionality of Haliot and 
               limit your ability to use certain features.
             </p>
           </section>

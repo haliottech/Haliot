@@ -435,6 +435,7 @@ export type Database = {
         Row: {
           collaboration_status: string | null
           created_at: string | null
+          document_url: string | null
           full_text_link: string | null
           id: string
           summary: string
@@ -447,6 +448,7 @@ export type Database = {
         Insert: {
           collaboration_status?: string | null
           created_at?: string | null
+          document_url?: string | null
           full_text_link?: string | null
           id?: string
           summary: string
@@ -459,6 +461,7 @@ export type Database = {
         Update: {
           collaboration_status?: string | null
           created_at?: string | null
+          document_url?: string | null
           full_text_link?: string | null
           id?: string
           summary?: string
