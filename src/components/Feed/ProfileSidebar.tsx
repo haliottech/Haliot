@@ -1,9 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
+import { User, Award, AlertCircle } from "lucide-react";
 
 const ProfileSidebar = () => {
   const navigate = useNavigate();
@@ -50,10 +53,28 @@ const ProfileSidebar = () => {
   const initials = profile.full_name?.split(' ').map((n: string) => n[0]).join('') || 
                    profile.email?.charAt(0).toUpperCase() || 'U';
 
+  const completionScore = profile.profile_completion_score || 0;
+  const isProfileComplete = completionScore >= 80;
+
   return (
     <Card className="p-6">
       <div className="text-center mb-6">
         <h3 className="font-semibold mb-4">Your Profile</h3>
+        
+        {/* Profile Completion Alert */}
+        {!isProfileComplete && (
+          <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2 text-orange-700 mb-2">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Complete Your Profile</span>
+            </div>
+            <Progress value={completionScore} className="h-2 mb-2" />
+            <p className="text-xs text-orange-600">
+              {completionScore}% complete - Add more details to improve visibility
+            </p>
+          </div>
+        )}
+
         <Avatar className="h-20 w-20 mx-auto mb-3 bg-accent/20">
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="Avatar" className="object-cover w-full h-full" />
@@ -63,10 +84,33 @@ const ProfileSidebar = () => {
             </AvatarFallback>
           )}
         </Avatar>
+        
         <h4 className="font-semibold">{profile.full_name || 'User'}</h4>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-muted-foreground mb-2">
           {profile.affiliation || 'No affiliation'}
         </p>
+        
+        {profile.profession && (
+          <p className="text-sm text-muted-foreground mb-2">
+            {profile.profession}
+          </p>
+        )}
+
+        {/* Profile Completion Badge */}
+        <div className="mb-4">
+          {isProfileComplete ? (
+            <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+              <Award className="h-3 w-3 mr-1" />
+              Complete Profile
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
+              <User className="h-3 w-3 mr-1" />
+              {completionScore}% Complete
+            </Badge>
+          )}
+        </div>
+
         <div className="flex justify-center gap-6 text-sm mb-4">
           <div>
             <span className="font-semibold">0</span>
@@ -77,10 +121,11 @@ const ProfileSidebar = () => {
             <p className="text-muted-foreground">Following</p>
           </div>
           <div>
-            <span className="font-semibold">0</span>
+            <span className="font-semibold">{completionScore}</span>
             <p className="text-muted-foreground">Profile Score</p>
           </div>
         </div>
+        
         <Link to="/profile">
           <Button variant="outline" className="w-full">
             Edit Profile

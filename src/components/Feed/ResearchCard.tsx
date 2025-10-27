@@ -2,13 +2,15 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, MessageCircle, Bookmark, UserPlus, FileText } from "lucide-react";
+import { ThumbsUp, MessageCircle, Bookmark, UserPlus, FileText, Edit, Trash2, BarChart3, MoreVertical } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { createLikeNotification } from "@/utils/notifications";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface ResearchCardProps {
   id: string;
@@ -33,6 +35,11 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   const [newComment, setNewComment] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(title);
+  const [editSummary, setEditSummary] = useState(summary);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,6 +58,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
 
     fetchLikes();
     fetchComments();
+    fetchAnalytics();
 
     return () => subscription.unsubscribe();
   }, [id]);
@@ -183,6 +191,88 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
     }
   };
 
+  const fetchAnalytics = async () => {
+    if (!currentUser || currentUser.id !== userId) return;
+    
+    const { data } = await supabase
+      .from("post_analytics")
+      .select("*")
+      .eq("post_id", id)
+      .single();
+    
+    if (data) {
+      setAnalytics(data);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditTitle(title);
+    setEditSummary(summary);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim() || !editSummary.trim()) {
+      toast({
+        title: "Error",
+        description: "Title and summary are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("research_posts")
+      .update({
+        title: editTitle.trim(),
+        summary: editSummary.trim(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (!error) {
+      setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Post updated successfully",
+      });
+      // Refresh the page to show updated content
+      window.location.reload();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update post",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("research_posts")
+      .delete()
+      .eq("id", id);
+
+    if (!error) {
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+      // Refresh the page to remove the deleted post
+      window.location.reload();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleConnect = () => {
     if (!currentUser) {
       toast({
@@ -217,10 +307,108 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                 ACTIVE
               </Badge>
             </div>
+            
+            {/* Post owner actions */}
+            {currentUser && currentUser.id === userId && (
+              <div className="flex items-center gap-2">
+                <Dialog open={showAnalytics} onOpenChange={setShowAnalytics}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Post Analytics</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      {analytics ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="text-center p-3 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-primary">{analytics.views || 0}</div>
+                              <div className="text-sm text-muted-foreground">Views</div>
+                            </div>
+                            <div className="text-center p-3 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-primary">{analytics.likes_count || 0}</div>
+                              <div className="text-sm text-muted-foreground">Likes</div>
+                            </div>
+                            <div className="text-center p-3 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-primary">{analytics.comments_count || 0}</div>
+                              <div className="text-sm text-muted-foreground">Comments</div>
+                            </div>
+                            <div className="text-center p-3 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-primary">{analytics.shares_count || 0}</div>
+                              <div className="text-sm text-muted-foreground">Shares</div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center text-muted-foreground">
+                          No analytics data available yet
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleEdit}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Post
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Post
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </div>
 
-          <h2 className="text-base font-bold mb-2 text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{summary}</p>
+          {isEditing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full p-2 border rounded-md text-sm"
+                  placeholder="Enter post title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Summary</label>
+                <textarea
+                  value={editSummary}
+                  onChange={(e) => setEditSummary(e.target.value)}
+                  className="w-full p-2 border rounded-md text-sm h-20 resize-none"
+                  placeholder="Enter post summary"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveEdit}>
+                  Save Changes
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="text-base font-bold mb-2 text-foreground">{title}</h2>
+              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{summary}</p>
+            </>
+          )}
 
           {documentUrl && (
             <a

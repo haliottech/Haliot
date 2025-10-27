@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User } from "@supabase/supabase-js";
 import Header from "@/components/Layout/Header";
-import { FileText, MessageCircle, Camera } from "lucide-react";
+import { FileText, MessageCircle, Camera, Award, AlertCircle, Linkedin } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -168,7 +169,9 @@ const Profile = () => {
       .update({
         full_name: profile?.full_name,
         affiliation: profile?.affiliation,
+        profession: profile?.profession,
         bio: profile?.bio,
+        linkedin_url: profile?.linkedin_url,
       })
       .eq("id", user.id);
 
@@ -179,6 +182,9 @@ const Profile = () => {
         variant: "destructive",
       });
     } else {
+      // Update profile completion score
+      await supabase.rpc('calculate_profile_completion', { user_id: user.id });
+      
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -250,37 +256,77 @@ const Profile = () => {
                 
                 {editMode ? (
                   <div className="space-y-4 w-full">
-                    <Input
-                      value={profile?.full_name || ""}
-                      onChange={(e) =>
-                        setProfile((prev: any) => ({
-                          ...prev,
-                          full_name: e.target.value,
-                        }))
-                      }
-                      placeholder="Full Name"
-                    />
-                    <Input
-                      value={profile?.affiliation || ""}
-                      onChange={(e) =>
-                        setProfile((prev: any) => ({
-                          ...prev,
-                          affiliation: e.target.value,
-                        }))
-                      }
-                      placeholder="Affiliation"
-                    />
-                    <Textarea
-                      value={profile?.bio || ""}
-                      onChange={(e) =>
-                        setProfile((prev: any) => ({
-                          ...prev,
-                          bio: e.target.value,
-                        }))
-                      }
-                      placeholder="Bio"
-                      rows={4}
-                    />
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Full Name *</label>
+                      <Input
+                        value={profile?.full_name || ""}
+                        onChange={(e) =>
+                          setProfile((prev: any) => ({
+                            ...prev,
+                            full_name: e.target.value,
+                          }))
+                        }
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Affiliation *</label>
+                      <Input
+                        value={profile?.affiliation || ""}
+                        onChange={(e) =>
+                          setProfile((prev: any) => ({
+                            ...prev,
+                            affiliation: e.target.value,
+                          }))
+                        }
+                        placeholder="University, Company, Institution"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Profession *</label>
+                      <Input
+                        value={profile?.profession || ""}
+                        onChange={(e) =>
+                          setProfile((prev: any) => ({
+                            ...prev,
+                            profession: e.target.value,
+                          }))
+                        }
+                        placeholder="Researcher, Professor, Student, etc."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">LinkedIn URL</label>
+                      <Input
+                        value={profile?.linkedin_url || ""}
+                        onChange={(e) =>
+                          setProfile((prev: any) => ({
+                            ...prev,
+                            linkedin_url: e.target.value,
+                          }))
+                        }
+                        placeholder="https://linkedin.com/in/yourprofile"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Bio *</label>
+                      <Textarea
+                        value={profile?.bio || ""}
+                        onChange={(e) =>
+                          setProfile((prev: any) => ({
+                            ...prev,
+                            bio: e.target.value,
+                          }))
+                        }
+                        placeholder="Tell us about your research interests and background"
+                        rows={4}
+                      />
+                    </div>
+
                     <Button onClick={handleUpdateProfile} className="w-full">
                       Save Changes
                     </Button>
@@ -290,29 +336,68 @@ const Profile = () => {
                   </div>
                 ) : (
                   <>
+                    {/* Profile Completion Alert */}
+                    {profile?.profile_completion_score && profile.profile_completion_score < 80 && (
+                      <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-orange-700 mb-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">Complete Your Profile</span>
+                        </div>
+                        <Progress value={profile.profile_completion_score} className="h-2 mb-2" />
+                        <p className="text-xs text-orange-600">
+                          {profile.profile_completion_score}% complete - Add more details to improve visibility
+                        </p>
+                      </div>
+                    )}
+
                     <h2 className="text-xl font-bold mb-1">
                       {profile?.full_name || "User"} (Me)
                     </h2>
+                    
                     {profile?.affiliation && (
-                      <p className="text-muted-foreground mb-2">
+                      <p className="text-muted-foreground mb-1">
                         {profile.affiliation}
                       </p>
                     )}
+
+                    {profile?.profession && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {profile.profession}
+                      </p>
+                    )}
+
                     {profile?.bio && (
                       <p className="text-sm text-muted-foreground mb-4">
                         {profile.bio}
                       </p>
                     )}
+
                     {profile?.linkedin_url && (
                       <a 
                         href={profile.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline mb-4 inline-block"
+                        className="flex items-center gap-2 text-sm text-primary hover:underline mb-4"
                       >
+                        <Linkedin className="h-4 w-4" />
                         LinkedIn Profile
                       </a>
                     )}
+
+                    {/* Profile Completion Badge */}
+                    <div className="mb-4">
+                      {profile?.profile_completion_score && profile.profile_completion_score >= 80 ? (
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+                          <Award className="h-3 w-3 mr-1" />
+                          Complete Profile
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {profile?.profile_completion_score || 0}% Complete
+                        </Badge>
+                      )}
+                    </div>
                     
                     <div className="grid grid-cols-2 gap-4 mb-6 w-full text-center">
                       <div>
