@@ -407,6 +407,18 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
             <>
               <h2 className="text-base font-bold mb-2 text-foreground">{title}</h2>
               <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{summary}</p>
+              {tags?.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
