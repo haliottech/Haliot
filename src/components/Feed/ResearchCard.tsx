@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { createLikeNotification } from "@/utils/notifications";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -285,27 +285,42 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   };
 
   return (
-    <Card className="p-5 hover:shadow-card-hover transition-all duration-300 bg-gradient-to-br from-card via-card to-card/95 border-border/50">
-      <div className="flex gap-3">
-        <Avatar className="h-10 w-10 bg-muted">
+    <Card className="p-6 lg:p-8 hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm border-border/50 shadow-lg">
+      <div className="flex gap-5">
+        {userId ? (
+          <Link to={`/profile/${userId}`}>
+            <Avatar className="h-12 w-12 bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all border border-border/50">
+              {authorAvatar ? (
+                <img src={authorAvatar} alt={author} className="object-cover w-full h-full" />
+              ) : (
+                <AvatarFallback className="text-base">{author.charAt(0)}</AvatarFallback>
+              )}
+            </Avatar>
+          </Link>
+        ) : (
+          <Avatar className="h-12 w-12 bg-muted border border-border/50">
           {authorAvatar ? (
             <img src={authorAvatar} alt={author} className="object-cover w-full h-full" />
           ) : (
-            <AvatarFallback className="text-sm">{author.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="text-base">{author.charAt(0)}</AvatarFallback>
           )}
         </Avatar>
+        )}
         <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
+          <div className="flex items-start justify-between mb-3">
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-sm">{author}</h3>
+              <div className="flex items-center gap-2 mb-1">
+                {userId ? (
+                  <Link to={`/profile/${userId}`} className="font-semibold text-base hover:text-primary transition-colors cursor-pointer">
+                    {author}
+                  </Link>
+                ) : (
+                  <h3 className="font-semibold text-base">{author}</h3>
+                )}
                 {authorAffiliation && (
                   <span className="text-xs text-muted-foreground">({authorAffiliation})</span>
                 )}
               </div>
-              <Badge variant="secondary" className="text-xs bg-gradient-to-r from-verified/20 to-verified-light text-verified border-0 mt-1 font-semibold">
-                ACTIVE
-              </Badge>
             </div>
             
             {/* Post owner actions */}
@@ -405,96 +420,129 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
             </div>
           ) : (
             <>
-              <h2 className="text-base font-bold mb-2 text-foreground">{title}</h2>
-              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{summary}</p>
+              <h2 className="text-xl font-bold mb-3 text-foreground leading-tight">{title}</h2>
+              <p className="text-base text-muted-foreground mb-4 leading-relaxed">{summary}</p>
               {tags?.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                      className="inline-flex items-center rounded-md border border-border/50 bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
                     >
                       #{tag}
                     </span>
                   ))}
                 </div>
+          )}
+
+              {/* Document Attachment Indicator */}
+              {documentUrl && (
+                <a
+                  href={documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mb-3 inline-flex items-center gap-3 px-3 py-2 border border-border/50 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 hover:border-primary/40 hover:bg-muted/40 transition-all group"
+                >
+                  <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                      Document Attached
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {documentUrl.toLowerCase().endsWith('.pdf') ? 'PDF' : documentUrl.split('.').pop()?.toUpperCase() || 'File'} • Click to view
+                    </p>
+                  </div>
+                  <svg className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
               )}
             </>
           )}
 
-          {documentUrl && (
-            <a
-              href={documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary-dark transition-colors mb-3"
-            >
-              <FileText className="h-4 w-4" />
-              <span>View Document</span>
-            </a>
-          )}
-
-          <div className="flex items-center justify-between pt-3 border-t border-border">
-            <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+            <div className="flex items-center gap-6 text-sm">
               <button
                 onClick={handleLike}
-                className={`flex items-center gap-1.5 hover:text-accent transition-colors ${
-                  isLiked ? "text-accent" : "text-muted-foreground"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+                  isLiked 
+                    ? "text-primary bg-primary/10 hover:bg-primary/20" 
+                    : "text-muted-foreground hover:text-primary hover:bg-muted/50"
                 }`}
               >
-                <ThumbsUp className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-                <span>{likesCount} Likes</span>
+                <ThumbsUp className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
+                <span className="font-medium">{likesCount}</span>
               </button>
               <button
                 onClick={() => setShowComments(!showComments)}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
               >
-                <MessageCircle className="h-4 w-4" />
-                <span>{commentsCount} Comments</span>
+                <MessageCircle className="h-5 w-5" />
+                <span className="font-medium">{commentsCount}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors">
-                <Bookmark className="h-4 w-4" />
-                <span>Save</span>
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
+                <Bookmark className="h-5 w-5" />
+                <span className="font-medium">Save</span>
               </button>
             </div>
-            <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity gap-1.5 shadow-gold font-medium" onClick={handleConnect}>
-              <UserPlus className="h-3.5 w-3.5" />
+            <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity gap-2 shadow-gold font-medium" onClick={handleConnect}>
+              <UserPlus className="h-4 w-4" />
               Connect
             </Button>
           </div>
 
           {showComments && (
-            <div className="mt-4 pt-4 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border/50">
               {currentUser && (
-                <div className="mb-4">
+                <div className="mb-6 p-4 bg-muted/30 rounded-lg">
                   <Textarea
                     placeholder="Write a comment..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="mb-2"
+                    className="mb-3 min-h-[100px] resize-none"
                   />
-                  <Button onClick={handleComment} size="sm">
+                  <Button onClick={handleComment} size="lg">
                     Post Comment
                   </Button>
                 </div>
               )}
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-2">
-                    <Avatar className="h-7 w-7 bg-muted">
-                      <AvatarFallback className="text-xs">
+                  <div key={comment.id} className="flex gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors">
+                    {comment.user_id ? (
+                      <Link to={`/profile/${comment.user_id}`}>
+                        <Avatar className="h-10 w-10 bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all border border-border/50">
+                          <AvatarFallback className="text-sm">
+                            {(comment.profiles?.full_name || comment.profiles?.email)?.charAt(0) || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
+                    ) : (
+                      <Avatar className="h-10 w-10 bg-muted border border-border/50">
+                        <AvatarFallback className="text-sm">
                         {(comment.profiles?.full_name || comment.profiles?.email)?.charAt(0) || "?"}
                       </AvatarFallback>
                     </Avatar>
+                    )}
                     <div className="flex-1">
-                      <p className="text-sm font-medium">
+                      <div className="flex items-center gap-2 mb-1">
+                        {comment.user_id ? (
+                          <Link to={`/profile/${comment.user_id}`} className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer">
+                            {comment.profiles?.full_name || comment.profiles?.email}
+                          </Link>
+                        ) : (
+                          <p className="text-sm font-semibold">
                         {comment.profiles?.full_name || comment.profiles?.email}
                       </p>
-                      <p className="text-sm text-muted-foreground">{comment.content}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                        )}
+                        <span className="text-xs text-muted-foreground">
                         {new Date(comment.created_at).toLocaleDateString()}
-                      </p>
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{comment.content}</p>
                     </div>
                   </div>
                 ))}

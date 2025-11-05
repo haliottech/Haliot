@@ -4,7 +4,8 @@ import ResearchCard from "@/components/Feed/ResearchCard";
 import ProfileSidebar from "@/components/Feed/ProfileSidebar";
 import TrendingSidebar from "@/components/Feed/TrendingSidebar";
 import { Button } from "@/components/ui/button";
-import { PenSquare, Loader2, Plus } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { PenSquare, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -19,25 +20,44 @@ const Feed = () => {
 
   const fetchPosts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("research_posts")
-      .select(`
-        *,
-        profiles (full_name, email, affiliation, avatar_url)
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("research_posts")
+        .select(`
+          *,
+          profiles (full_name, email, affiliation, avatar_url)
+        `)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching posts:", error);
+      if (error) {
+        console.error("Error fetching posts:", error);
+        
+        // Provide more specific error messages
+        let errorMessage = "Failed to load posts";
+        if (error.message.includes("timeout") || error.message.includes("Failed to fetch")) {
+          errorMessage = "Connection timeout. Please check your internet connection and try again.";
+        } else if (error.message.includes("JWT")) {
+          errorMessage = "Authentication error. Please refresh the page.";
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        setPosts(data || []);
+      }
+    } catch (err: any) {
+      console.error("Network error:", err);
       toast({
-        title: "Error",
-        description: "Failed to load posts",
+        title: "Connection Error",
+        description: "Unable to connect to the server. Please check your internet connection and ensure Supabase is accessible.",
         variant: "destructive",
       });
-    } else {
-      setPosts(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getTimeAgo = (date: string) => {
@@ -57,8 +77,8 @@ const Feed = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <Header />
       
-      <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <main className="max-w-7xl mx-auto px-4 lg:px-6 py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar */}
           <aside className="lg:col-span-3 space-y-6">
             <ProfileSidebar />
@@ -66,34 +86,26 @@ const Feed = () => {
 
           {/* Main Feed */}
           <div className="lg:col-span-6">
-            <div className="flex gap-3 mb-6">
-              <Link to="/create" className="flex-1">
-                <Button variant="outline" className="w-full gap-2 justify-start">
-                  <Plus className="h-4 w-4" />
-                  Share New Research
-                </Button>
-              </Link>
-              <Link to="/create">
-                <Button variant="outline">Post</Button>
-              </Link>
-            </div>
-
             {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex justify-center py-16">
+                <div className="text-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                  <p className="text-muted-foreground">Loading research posts...</p>
+                </div>
               </div>
             ) : posts.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">No posts yet. Be the first to share!</p>
+              <Card className="p-12 text-center border-border/50 bg-card/50 backdrop-blur-sm">
+                <PenSquare className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-lg text-muted-foreground mb-6">No posts yet. Be the first to share!</p>
                 <Link to="/create">
-                  <Button className="gap-2">
-                    <PenSquare className="h-4 w-4" />
+                  <Button size="lg" className="gap-2">
+                    <PenSquare className="h-5 w-5" />
                     Create First Post
                   </Button>
                 </Link>
-              </div>
+              </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {posts.map((post) => (
                   <ResearchCard
                     key={post.id}

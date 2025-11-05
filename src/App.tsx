@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
+import ProfileCompletion from "./pages/ProfileCompletion";
 import Explore from "./pages/Explore";
+import RoomChat from "./pages/RoomChat";
 import CreatePost from "./pages/CreatePost";
 import Auth from "./pages/Auth";
 import Chat from "./pages/Chat";
@@ -28,7 +30,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/profile-completion" element={<ProfileCompletion />} />
             <Route path="/explore" element={<Explore />} />
+            <Route path="/room/:roomId" element={<RoomChat />} />
             <Route path="/create" element={<CreatePost />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/auth" element={<Auth />} />

@@ -1,288 +1,443 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Users, BookOpen, Sparkles, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, Users, TrendingUp, ThumbsUp, Heart, Smile, Plus, Loader2, BarChart3, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface TrendingTopic {
-  name: string;
-  count: number;
-  trend: string;
-}
-
-interface ResearchArea {
+interface DiscussionRoom {
   id: string;
   title: string;
   description: string;
-  followers: number;
-  papers: number;
-  isFollowing: boolean;
+  topic: string;
+  created_by: string;
+  member_count: number;
+  message_count: number;
+  is_active: boolean;
+  created_at: string;
+  creator?: {
+    full_name: string;
+    avatar_url: string;
+  };
+  isMember: boolean;
+}
+
+interface RoomMessage {
+  id: string;
+  content: string;
+  user_id: string;
+  created_at: string;
+  user?: {
+    full_name: string;
+    avatar_url: string;
+  };
+  reactions?: {
+    type: string;
+    count: number;
+  }[];
+}
+
+interface RoomPoll {
+  id: string;
+  question: string;
+  options: string[];
+  is_active: boolean;
+  created_at: string;
+  votes?: {
+    option_index: number;
+    count: number;
+  }[];
+  userVote?: number;
 }
 
 const Explore = () => {
-  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
-  const [researchAreas, setResearchAreas] = useState<ResearchArea[]>([]);
+  const navigate = useNavigate();
+  const [rooms, setRooms] = useState<DiscussionRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [canCreateRoom, setCanCreateRoom] = useState(false);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [newRoomTitle, setNewRoomTitle] = useState("");
+  const [newRoomDescription, setNewRoomDescription] = useState("");
+  const [newRoomTopic, setNewRoomTopic] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+        checkRoomCreationPermission(session.user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+        checkRoomCreationPermission(session.user.id);
+      } else {
+        setCanCreateRoom(false);
+        setUserProfile(null);
+      }
     });
 
-    fetchTrendingTopics();
-    fetchResearchAreas();
+    fetchRooms();
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchTrendingTopics = async () => {
-    const { data: posts } = await supabase
-      .from("research_posts")
-      .select("tags");
+  const checkRoomCreationPermission = async (userId: string) => {
+    try {
+      // Fetch user profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("verification_status")
+        .eq("id", userId)
+        .single();
 
-    if (posts) {
-      const tagCount: { [key: string]: number } = {};
-      posts.forEach(post => {
-        post.tags?.forEach((tag: string) => {
-          tagCount[tag] = (tagCount[tag] || 0) + 1;
-        });
-      });
+      setUserProfile(profile);
 
-      const trending = Object.entries(tagCount)
-        .map(([name, count]) => ({
-          name,
-          count,
-          trend: `+${Math.floor(Math.random() * 50)}%`
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 6);
+      // Check if user has admin role
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
 
-      setTrendingTopics(trending);
+      const isAdmin = roles?.some((r: any) => r.role === "admin") || false;
+      const isVerified = profile?.verification_status === "verified";
+
+      // Allow room creation for admins or verified users
+      setCanCreateRoom(isAdmin || isVerified);
+    } catch (error) {
+      console.error("Error checking room creation permission:", error);
+      setCanCreateRoom(false);
     }
   };
 
-  const fetchResearchAreas = async () => {
+
+  const fetchRooms = async () => {
     setLoading(true);
-    const { data: areas, error } = await supabase
-      .from("research_areas")
-      .select("*");
+    try {
+      const { data: roomsData, error } = await (supabase.from("discussion_rooms") as any)
+        .select("*")
+        .eq("is_active", true)
+        .order("member_count", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching rooms:", error);
+        toast({
+          title: "Error Loading Rooms",
+          description: error.message || "Failed to load discussion rooms. Please check if the tables exist in your database.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+    if (roomsData) {
+      const roomsWithMembership = await Promise.all(
+        roomsData.map(async (room: any) => {
+          // Fetch creator profile separately
+          let creator = { full_name: "Unknown", avatar_url: null };
+          if (room.created_by) {
+            const { data: creatorProfile } = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("id", room.created_by)
+              .single();
+            if (creatorProfile) {
+              creator = creatorProfile;
+            }
+          }
+
+          // Get actual member count
+          const { count: memberCount } = await (supabase.from("room_members") as any)
+            .select("*", { count: "exact", head: true })
+            .eq("room_id", room.id);
+
+          // Get actual message count
+          const { count: msgCount } = await (supabase.from("room_messages") as any)
+            .select("*", { count: "exact", head: true })
+            .eq("room_id", room.id);
+
+          // Check if current user is a member
+          let isMember = false;
+          if (currentUser) {
+            const { data: member } = await (supabase.from("room_members") as any)
+              .select("id")
+              .eq("room_id", room.id)
+              .eq("user_id", currentUser.id)
+              .single();
+            isMember = !!member;
+          }
+
+          return {
+            ...room,
+            creator,
+            member_count: memberCount || 0,
+            message_count: msgCount || 0,
+            isMember,
+          };
+        })
+      );
+      setRooms(roomsWithMembership);
+    }
+    } catch (err: any) {
+      console.error("Unexpected error fetching rooms:", err);
+      toast({
+        title: "Error",
+        description: err.message || "An unexpected error occurred while loading rooms.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinRoom = async (room: DiscussionRoom, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to join discussion rooms",
+      });
+      return;
+    }
+
+    const { error } = await (supabase.from("room_members") as any)
+      .insert({ room_id: room.id, user_id: currentUser.id });
 
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to load research areas",
+        description: "Failed to join room",
         variant: "destructive",
       });
-      setLoading(false);
-      return;
+    } else {
+      // Update member count
+      await (supabase.from("discussion_rooms") as any)
+        .update({ member_count: (room.member_count || 0) + 1 })
+        .eq("id", room.id);
+
+      toast({
+        title: "Success",
+        description: "You've joined the room!",
+      });
+      fetchRooms();
     }
-
-    const areasWithStats = await Promise.all(
-      (areas || []).map(async (area) => {
-        const { count: followers } = await supabase
-          .from("research_area_follows")
-          .select("*", { count: "exact", head: true })
-          .eq("research_area_id", area.id);
-
-        const { count: papers } = await supabase
-          .from("research_posts")
-          .select("*", { count: "exact", head: true })
-          .contains("tags", [area.title]);
-
-        let isFollowing = false;
-        if (currentUser) {
-          const { data } = await supabase
-            .from("research_area_follows")
-            .select("id")
-            .eq("research_area_id", area.id)
-            .eq("user_id", currentUser.id)
-            .single();
-          isFollowing = !!data;
-        }
-
-        return {
-          id: area.id,
-          title: area.title,
-          description: area.description,
-          followers: followers || 0,
-          papers: papers || 0,
-          isFollowing,
-        };
-      })
-    );
-
-    setResearchAreas(areasWithStats);
-    setLoading(false);
   };
 
-  const handleFollow = async (areaId: string) => {
-    if (!currentUser) {
+  const handleCreateRoom = async () => {
+    if (!currentUser || !newRoomTitle.trim()) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to follow research areas",
+        title: "Error",
+        description: "Please provide a room title",
+        variant: "destructive",
       });
       return;
     }
 
-    const area = researchAreas.find(a => a.id === areaId);
-    if (!area) return;
+    try {
+      const { data, error } = await (supabase.from("discussion_rooms") as any)
+        .insert({
+          title: newRoomTitle,
+          description: newRoomDescription || null,
+          topic: newRoomTopic || null,
+          created_by: currentUser.id,
+        })
+        .select()
+        .single();
 
-    if (area.isFollowing) {
-      const { error } = await supabase
-        .from("research_area_follows")
-        .delete()
-        .eq("research_area_id", areaId)
-        .eq("user_id", currentUser.id);
-
-      if (!error) {
-        setResearchAreas(prev =>
-          prev.map(a =>
-            a.id === areaId
-              ? { ...a, isFollowing: false, followers: a.followers - 1 }
-              : a
-          )
-        );
-      }
-    } else {
-      const { error } = await supabase
-        .from("research_area_follows")
-        .insert({ research_area_id: areaId, user_id: currentUser.id });
-
-      if (!error) {
-        setResearchAreas(prev =>
-          prev.map(a =>
-            a.id === areaId
-              ? { ...a, isFollowing: true, followers: a.followers + 1 }
-              : a
-          )
-        );
-      } else {
+      if (error) {
+        console.error("Error creating room:", error);
         toast({
-          title: "Error",
-          description: "Failed to follow area",
+          title: "Failed to Create Room",
+          description: error.message || "Failed to create room. Please check if the discussion_rooms table exists and you have proper permissions.",
           variant: "destructive",
         });
+        return;
       }
+
+      if (!data) {
+        toast({
+          title: "Error",
+          description: "Room was not created. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Join the room as creator
+      const { error: memberError } = await (supabase.from("room_members") as any)
+        .insert({ room_id: data.id, user_id: currentUser.id, role: "admin" });
+
+      if (memberError) {
+        console.error("Error joining room as creator:", memberError);
+        // Still show success but warn about membership
+        toast({
+          title: "Room Created",
+          description: "Room created but failed to join automatically. Please join manually.",
+          variant: "default",
+        });
+      }
+
+      toast({
+        title: "Success",
+        description: "Room created successfully!",
+      });
+      setShowCreateRoom(false);
+      setNewRoomTitle("");
+      setNewRoomDescription("");
+      setNewRoomTopic("");
+      await fetchRooms();
+    } catch (err: any) {
+      console.error("Unexpected error creating room:", err);
+      toast({
+        title: "Error",
+        description: err.message || "An unexpected error occurred while creating the room.",
+        variant: "destructive",
+      });
     }
   };
+
+
   return (
     <div className="min-h-screen bg-secondary/30">
       <Header />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-foreground">Explore Research</h1>
-            <p className="text-muted-foreground text-lg">
-              Discover trending topics and groundbreaking research across all disciplines
-            </p>
-          </div>
-
-          {/* Trending Topics */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-accent" />
-                <span>Trending Topics</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : trendingTopics.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No trending topics yet</p>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {trendingTopics.map((topic, index) => (
-                    <Card key={index} className="hover:shadow-card-hover transition-shadow cursor-pointer">
-                      <CardContent className="pt-6">
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-foreground">{topic.name}</h3>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">{topic.count} posts</span>
-                            <Badge variant="outline" className="text-verified">
-                              {topic.trend}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Research Areas */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground flex items-center space-x-2">
-              <Sparkles className="h-6 w-6 text-primary" />
-              <span>Popular Research Areas</span>
-            </h2>
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-6">
-                {researchAreas.map((area) => (
-                  <Card key={area.id} className="shadow-card hover:shadow-card-hover transition-all">
-                    <CardHeader>
-                      <CardTitle className="text-xl">{area.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-muted-foreground">{area.description}</p>
-                      <div className="flex items-center justify-between pt-4 border-t">
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                          <div className="flex items-center space-x-1">
-                            <Users className="h-4 w-4" />
-                            <span>{area.followers}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{area.papers} papers</span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant={area.isFollowing ? "outline" : "default"}
-                          onClick={() => handleFollow(area.id)}
-                        >
-                          {area.isFollowing ? "Following" : "Follow"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground">Discussion Rooms</h1>
+              <p className="text-muted-foreground text-lg mt-2">
+                Join discussions, share ideas, and collaborate with researchers
+              </p>
+            </div>
+            {currentUser && canCreateRoom && (
+              <Dialog open={showCreateRoom} onOpenChange={setShowCreateRoom}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 bg-primary hover:bg-primary/90 shadow-md">
+                    <Plus className="h-4 w-4" />
+                    Create Room
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Discussion Room</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Input
+                      placeholder="Room Title"
+                      value={newRoomTitle}
+                      onChange={(e) => setNewRoomTitle(e.target.value)}
+                    />
+                    <Textarea
+                      placeholder="Description (optional)"
+                      value={newRoomDescription}
+                      onChange={(e) => setNewRoomDescription(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Topic/Tag (optional)"
+                      value={newRoomTopic}
+                      onChange={(e) => setNewRoomTopic(e.target.value)}
+                    />
+                    <Button onClick={handleCreateRoom} className="w-full">
+                      Create Room
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
 
-          {/* CTA */}
-          <Card className="bg-gradient-hero text-primary-foreground shadow-elevated">
-            <CardContent className="py-12 text-center space-y-4">
-              <h2 className="text-3xl font-bold">Join the Conversation</h2>
-              <p className="text-lg opacity-90 max-w-2xl mx-auto">
-                Connect with researchers worldwide, share your work, and stay updated on the latest breakthroughs
-              </p>
-              <Button size="lg" variant="secondary" className="mt-4">
-                Get Started
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Rooms Grid */}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {rooms.map((room) => (
+                <Card
+                  key={room.id}
+                  className="hover:shadow-lg transition-all cursor-pointer border-border/50 bg-card/50 backdrop-blur-sm"
+                  onClick={() => navigate(`/room/${room.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl mb-2">{room.title}</CardTitle>
+                        {room.topic && (
+                          <Badge variant="secondary" className="mb-2">
+                            {room.topic}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {room.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {room.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span>{room.member_count || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4" />
+                          <span>{room.message_count || 0}</span>
+                        </div>
+                      </div>
+                      {!room.isMember && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => handleJoinRoom(room, e)}
+                        >
+                          Join
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+                 {rooms.length === 0 && !loading && (
+                   <Card className="p-12 text-center border-border/50 bg-card/50 backdrop-blur-sm">
+                     <MessageSquare className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                     <p className="text-lg text-muted-foreground mb-6">No discussion rooms yet</p>
+                     {currentUser && canCreateRoom && (
+                       <Button onClick={() => setShowCreateRoom(true)} className="bg-primary hover:bg-primary/90">
+                         <Plus className="h-4 w-4 mr-2" />
+                         Create First Room
+                       </Button>
+                     )}
+                     {currentUser && !canCreateRoom && (
+                       <p className="text-sm text-muted-foreground">
+                         Room creation is limited to verified researchers and administrators.
+                       </p>
+                     )}
+                   </Card>
+                 )}
         </div>
       </main>
+
     </div>
   );
 };

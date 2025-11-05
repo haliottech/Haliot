@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FlaskConical, MessageSquare, Compass } from "lucide-react";
+import { FlaskConical, MessageSquare, Compass, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -61,7 +61,7 @@ const Header = () => {
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">Haliot</span>
           </Link>
           
-            <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4">
             <Link to="/explore" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-medium">
               <Compass className="h-5 w-5" />
               <span>Explore</span>
@@ -70,6 +70,15 @@ const Header = () => {
               <MessageSquare className="h-5 w-5" />
               <span>Messages</span>
             </Link>
+            {user && (
+              <Link to="/create">
+                <Button size="sm" className="gap-2 bg-gradient-primary hover:opacity-90 transition-opacity shadow-gold">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Share New Research</span>
+                  <span className="sm:hidden">Share</span>
+                </Button>
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-4">

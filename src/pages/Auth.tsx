@@ -21,9 +21,20 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        // Check if profile is completed
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("profile_completed")
+          .eq("id", session.user.id)
+          .single();
+        
+        if (!profile?.profile_completed) {
+          navigate("/profile-completion");
+        } else {
+          navigate("/");
+        }
       }
     });
   }, [navigate]);
@@ -67,11 +78,29 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Success!",
-          description: "Account created successfully. You can now sign in.",
-        });
-        setIsSignUp(false);
+        // Wait a moment for the profile to be created, then check if it needs completion
+        setTimeout(async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("profile_completed")
+              .eq("id", session.user.id)
+              .single();
+            
+            if (!profile?.profile_completed) {
+              navigate("/profile-completion");
+            } else {
+              navigate("/");
+            }
+          } else {
+            toast({
+              title: "Success!",
+              description: "Account created successfully. Please check your email to verify your account.",
+            });
+            setIsSignUp(false);
+          }
+        }, 1000);
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
@@ -86,7 +115,23 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        navigate("/");
+        // Check if profile is completed
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("profile_completed")
+            .eq("id", session.user.id)
+            .single();
+          
+          if (!profile?.profile_completed) {
+            navigate("/profile-completion");
+          } else {
+            navigate("/");
+          }
+        } else {
+          navigate("/");
+        }
       }
     }
 

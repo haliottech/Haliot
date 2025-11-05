@@ -62,90 +62,79 @@ const ProfileSidebar = () => {
     const isProfileComplete = completionScore >= 80;
 
     return (
-      <Card className="p-6">
-        <div className="text-center mb-6">
-          <h3 className="font-semibold mb-4">Your Profile</h3>
+      <Card className="p-8 shadow-lg border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="text-center">
+          <Link to="/profile">
+            <Avatar className="h-24 w-24 mx-auto mb-4 bg-accent/20 cursor-pointer hover:ring-4 hover:ring-primary/30 transition-all border-2 border-border/50">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="object-cover w-full h-full" />
+              ) : (
+                <AvatarFallback className="text-3xl bg-accent/20 text-accent">
+                  {initials}
+                </AvatarFallback>
+              )}
+            </Avatar>
+          </Link>
           
-          {/* Profile Completion Alert */}
-          {!isProfileComplete && (
-            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="flex items-center gap-2 text-orange-700 mb-2">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm font-medium">Complete Your Profile</span>
-              </div>
-              <Progress value={completionScore} className="h-2 mb-2" />
-              <p className="text-xs text-orange-600">
-                {completionScore}% complete - Add more details to improve visibility
-              </p>
-            </div>
-          )}
-
-          <Avatar className="h-20 w-20 mx-auto mb-3 bg-accent/20">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="object-cover w-full h-full" />
-            ) : (
-              <AvatarFallback className="text-2xl bg-accent/20 text-accent">
-                {initials}
-              </AvatarFallback>
-            )}
-          </Avatar>
-          
-          <h4 className="font-semibold">{profile.full_name || 'User'}</h4>
-          <p className="text-sm text-muted-foreground mb-2">
+          <Link to="/profile">
+            <h4 className="text-lg font-semibold hover:text-primary transition-colors cursor-pointer mb-1">{profile.full_name || 'User'}</h4>
+          </Link>
+          <p className="text-sm text-muted-foreground mb-3">
             {profile.affiliation || 'No affiliation'}
           </p>
           
-          {profile.profession && (
-            <p className="text-sm text-muted-foreground mb-2">
-              {profile.profession}
-            </p>
+          {/* Subtle Profile Completion Reminder */}
+          {!isProfileComplete && (
+            <div className="mb-4">
+              <Link to="/profile">
+                <Badge variant="outline" className="text-xs py-1 px-2 cursor-pointer hover:bg-muted/50 transition-colors border-dashed">
+                  <User className="h-3 w-3 mr-1" />
+                  Complete profile
+                </Badge>
+              </Link>
+            </div>
           )}
 
           {/* Profile Completion Badge */}
-          <div className="mb-4">
-            {isProfileComplete ? (
+          {isProfileComplete && (
+            <div className="mb-4">
               <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
                 <Award className="h-3 w-3 mr-1" />
                 Complete Profile
               </Badge>
-            ) : (
-              <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
-                <User className="h-3 w-3 mr-1" />
-                {completionScore}% Complete
-              </Badge>
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex justify-center gap-6 text-sm mb-4">
-            <div>
-              <span className="font-semibold">0</span>
-              <p className="text-muted-foreground">Followers</p>
+          <div className="flex justify-center gap-6 text-sm mb-6 pt-4 border-t border-border/50">
+            <div className="text-center">
+              <div className="text-xl font-bold text-foreground">0</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Followers</div>
             </div>
-            <div>
-              <span className="font-semibold">0</span>
-              <p className="text-muted-foreground">Following</p>
+            <div className="text-center">
+              <div className="text-xl font-bold text-foreground">0</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Following</div>
             </div>
-            <div>
-              <span className="font-semibold">{completionScore}</span>
-              <p className="text-muted-foreground">Profile Score</p>
+            <div className="text-center">
+              <div className="text-xl font-bold text-foreground">{completionScore}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Score</div>
             </div>
           </div>
           
           <Link to="/profile">
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" size="lg">
               Edit Profile
             </Button>
           </Link>
         </div>
 
-        <div className="border-t pt-4">
-          <h4 className="font-semibold mb-3 text-sm">Suggested Connections</h4>
+        <div className="border-t border-border/50 pt-6 mt-6">
+          <h4 className="font-semibold mb-4 text-base">Suggested Connections</h4>
           <div className="space-y-3">
             {suggestedUsers.map((user) => (
               <div 
                 key={user.id} 
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => navigate('/chat')}
+                onClick={() => navigate(`/profile/${user.id}`)}
               >
                 <Avatar className="h-8 w-8 bg-muted">
                   {user.avatar_url ? (
