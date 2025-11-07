@@ -30,6 +30,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   const [likesCount, setLikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -59,9 +60,10 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
     fetchLikes();
     fetchComments();
     fetchAnalytics();
+    fetchSavedStatus();
 
     return () => subscription.unsubscribe();
-  }, [id]);
+  }, [id, currentUser]);
 
   const fetchCurrentUserProfile = async (userId: string) => {
     const { data } = await supabase
@@ -202,6 +204,76 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
     
     if (data) {
       setAnalytics(data);
+    }
+  };
+
+  const fetchSavedStatus = async () => {
+    if (!currentUser) {
+      setIsSaved(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("saved_posts")
+      .select("id")
+      .eq("post_id", id)
+      .eq("user_id", currentUser.id)
+      .single();
+
+    if (!error && data) {
+      setIsSaved(true);
+    } else {
+      setIsSaved(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save posts",
+      });
+      return;
+    }
+
+    if (isSaved) {
+      const { error } = await supabase
+        .from("saved_posts")
+        .delete()
+        .eq("post_id", id)
+        .eq("user_id", currentUser.id);
+
+      if (!error) {
+        setIsSaved(false);
+        toast({
+          title: "Success",
+          description: "Post removed from saved",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to unsave post",
+          variant: "destructive",
+        });
+      }
+    } else {
+      const { error } = await supabase
+        .from("saved_posts")
+        .insert({ post_id: id, user_id: currentUser.id });
+
+      if (!error) {
+        setIsSaved(true);
+        toast({
+          title: "Success",
+          description: "Post saved successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save post",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -483,9 +555,16 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                 <MessageCircle className="h-5 w-5" />
                 <span className="font-medium">{commentsCount}</span>
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
-                <Bookmark className="h-5 w-5" />
-                <span className="font-medium">Save</span>
+              <button
+                onClick={handleSave}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+                  isSaved
+                    ? "text-primary bg-primary/10 hover:bg-primary/20"
+                    : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                }`}
+              >
+                <Bookmark className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+                <span className="font-medium">{isSaved ? "Saved" : "Save"}</span>
               </button>
             </div>
             <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity gap-2 shadow-gold font-medium" onClick={handleConnect}>
