@@ -89,14 +89,17 @@ const NotificationDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="relative p-2 hover:bg-muted rounded-lg transition-colors">
-          <Bell className="h-5 w-5 text-muted-foreground" />
+        <button 
+          className="relative flex items-center justify-center w-10 h-10 hover:bg-muted/50 rounded transition-colors group"
+          title="Notifications"
+        >
+          <Bell className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full"
             >
-              {unreadCount}
+              {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
         </button>

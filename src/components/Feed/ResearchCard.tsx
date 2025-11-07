@@ -422,26 +422,14 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
             <>
               <h2 className="text-xl font-bold mb-3 text-foreground leading-tight">{title}</h2>
               <p className="text-base text-muted-foreground mb-4 leading-relaxed">{summary}</p>
-              {tags?.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center rounded-md border border-border/50 bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-          )}
-
+              
               {/* Document Attachment Indicator */}
               {documentUrl && (
                 <a
                   href={documentUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mb-3 inline-flex items-center gap-3 px-3 py-2 border border-border/50 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 hover:border-primary/40 hover:bg-muted/40 transition-all group"
+                  className="mb-4 inline-flex items-center gap-3 px-3 py-2 border border-border/50 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 hover:border-primary/40 hover:bg-muted/40 transition-all group"
                 >
                   <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors flex-shrink-0">
                     <FileText className="h-4 w-4 text-primary" />
@@ -458,6 +446,19 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
+              )}
+
+              {tags?.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center rounded-md border border-border/50 bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               )}
             </>
           )}
