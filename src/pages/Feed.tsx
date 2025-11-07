@@ -5,7 +5,7 @@ import ProfileSidebar from "@/components/Feed/ProfileSidebar";
 import TrendingSidebar from "@/components/Feed/TrendingSidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { PenSquare, Loader2 } from "lucide-react";
+import { PenSquare, Loader2, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -13,21 +13,28 @@ import { toast } from "@/hooks/use-toast";
 const Feed = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    fetchPosts(selectedTopic);
+  }, [selectedTopic]);
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (topic?: string | null) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("research_posts")
         .select(`
           *,
           profiles (full_name, email, affiliation, avatar_url)
         `)
         .order("created_at", { ascending: false });
+
+      if (topic) {
+        query = query.contains("tags", [topic]);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching posts:", error);
@@ -60,6 +67,14 @@ const Feed = () => {
     }
   };
 
+  const handleTopicSelect = (topic: string) => {
+    setSelectedTopic((current) => (current === topic ? null : topic));
+  };
+
+  const handleClearTopic = () => {
+    setSelectedTopic(null);
+  };
+
   const getTimeAgo = (date: string) => {
     const now = new Date();
     const posted = new Date(date);
@@ -86,6 +101,20 @@ const Feed = () => {
 
           {/* Main Feed */}
           <div className="lg:col-span-6">
+            {selectedTopic && (
+              <Card className="mb-6 border-primary/40 bg-primary/5">
+                <div className="flex items-center justify-between gap-4 p-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Showing posts tagged</p>
+                    <p className="text-lg font-semibold text-primary">#{selectedTopic}</p>
+                  </div>
+                  <Button variant="ghost" size="sm" className="gap-2" onClick={handleClearTopic}>
+                    <XCircle className="h-4 w-4" />
+                    Clear filter
+                  </Button>
+                </div>
+              </Card>
+            )}
             {loading ? (
               <div className="flex justify-center py-16">
                 <div className="text-center">
@@ -96,13 +125,25 @@ const Feed = () => {
             ) : posts.length === 0 ? (
               <Card className="p-12 text-center border-border/50 bg-card/50 backdrop-blur-sm">
                 <PenSquare className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-lg text-muted-foreground mb-6">No posts yet. Be the first to share!</p>
-                <Link to="/create">
-                  <Button size="lg" className="gap-2">
-                    <PenSquare className="h-5 w-5" />
-                    Create First Post
+                <p className="text-lg text-muted-foreground mb-6">
+                  {selectedTopic
+                    ? `No posts found for #${selectedTopic}. Try a different topic or clear the filter.`
+                    : "No posts yet. Be the first to share!"}
+                </p>
+                {!selectedTopic && (
+                  <Link to="/create">
+                    <Button size="lg" className="gap-2">
+                      <PenSquare className="h-5 w-5" />
+                      Create First Post
+                    </Button>
+                  </Link>
+                )}
+                {selectedTopic && (
+                  <Button variant="outline" size="lg" className="gap-2" onClick={handleClearTopic}>
+                    <XCircle className="h-5 w-5" />
+                    Clear filter
                   </Button>
-                </Link>
+                )}
               </Card>
             ) : (
               <div className="space-y-6">
@@ -127,7 +168,7 @@ const Feed = () => {
 
           {/* Right Sidebar */}
           <aside className="lg:col-span-3">
-            <TrendingSidebar />
+            <TrendingSidebar onSelectTopic={handleTopicSelect} activeTopic={selectedTopic} />
           </aside>
         </div>
       </main>
