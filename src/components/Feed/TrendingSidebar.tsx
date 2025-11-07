@@ -8,11 +8,76 @@ const TrendingSidebar = () => {
   const navigate = useNavigate();
   const [topics, setTopics] = useState<{ name: string; count: number }[]>([]);
   const [activeRooms, setActiveRooms] = useState<{ id: string; title: string; member_count: number }[]>([]);
+  const [visitorCount, setVisitorCount] = useState<number>(0);
 
   useEffect(() => {
     fetchTrendingTopics();
     fetchActiveRooms();
+    fetchVisitorCount();
+    incrementVisitorCount();
   }, []);
+
+  const fetchVisitorCount = async () => {
+    try {
+      // Try to get from a site_stats table, or use a simple counter
+      const { data } = await (supabase as any)
+        .from("site_stats")
+        .select("visitor_count")
+        .eq("id", "main")
+        .single();
+      
+      if (data) {
+        setVisitorCount(data.visitor_count || 0);
+      }
+    } catch (error) {
+      // If table doesn't exist, we'll use localStorage as fallback
+      const stored = localStorage.getItem("haliot_visitor_count");
+      if (stored) {
+        setVisitorCount(parseInt(stored, 10));
+      }
+    }
+  };
+
+  const incrementVisitorCount = async () => {
+    const sessionKey = `haliot_visit_${new Date().toDateString()}`;
+    const hasVisitedToday = localStorage.getItem(sessionKey);
+    
+    if (!hasVisitedToday) {
+      localStorage.setItem(sessionKey, "true");
+      
+      try {
+        // Try to increment in database
+        const { data: existing } = await (supabase as any)
+          .from("site_stats")
+          .select("visitor_count")
+          .eq("id", "main")
+          .single();
+
+        if (existing) {
+          await (supabase as any)
+            .from("site_stats")
+            .update({ visitor_count: (existing.visitor_count || 0) + 1 })
+            .eq("id", "main");
+        } else {
+          // Create if doesn't exist
+          await (supabase as any)
+            .from("site_stats")
+            .insert({ id: "main", visitor_count: 1 });
+        }
+        
+        setVisitorCount((prev) => prev + 1);
+      } catch (error) {
+        // Fallback to localStorage
+        const current = parseInt(localStorage.getItem("haliot_visitor_count") || "0", 10);
+        const newCount = current + 1;
+        localStorage.setItem("haliot_visitor_count", newCount.toString());
+        setVisitorCount(newCount);
+      }
+    } else {
+      // Already visited today, just fetch current count
+      fetchVisitorCount();
+    }
+  };
 
   const fetchTrendingTopics = async () => {
     const { data } = await supabase
@@ -37,7 +102,8 @@ const TrendingSidebar = () => {
   };
 
   const fetchActiveRooms = async () => {
-    const { data } = await (supabase.from("discussion_rooms") as any)
+    const { data } = await (supabase as any)
+      .from("discussion_rooms")
       .select("id, title, member_count")
       .eq("is_active", true)
       .order("member_count", { ascending: false })
@@ -48,8 +114,37 @@ const TrendingSidebar = () => {
     }
   };
 
+  const formatVisitorCount = (count: number): string => {
+    return count.toString().padStart(5, '0');
+  };
+
+  const renderVisitorCounter = () => {
+    const countString = formatVisitorCount(visitorCount);
+    const digits = countString.split('');
+
+    return (
+      <Card className="p-4 mb-6 border border-border/30 bg-card/30 shadow-sm">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="flex items-center justify-center gap-1">
+            {digits.map((digit, index) => (
+              <div
+                key={index}
+                className="bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600 font-semibold text-base rounded-md w-8 h-10 flex items-center justify-center border border-orange-200/50"
+              >
+                {digit}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">Total Visitors</p>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {renderVisitorCounter()}
+      
       <Card className="p-6">
         <h3 className="font-semibold mb-4">Trending Topics</h3>
         <div className="space-y-3">
