@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, MessageCircle, Bookmark, UserPlus, FileText, Edit, Trash2, BarChart3, MoreVertical } from "lucide-react";
+import { ThumbsUp, MessageCircle, Bookmark, BookmarkCheck, UserPlus, FileText, Edit, Trash2, BarChart3, MoreVertical } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -43,27 +43,36 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   const [editSummary, setEditSummary] = useState(summary);
 
   useEffect(() => {
+    fetchLikes();
+    fetchComments();
+    fetchAnalytics();
+  }, [id]);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUser(session?.user ?? null);
-      if (session?.user) {
-        fetchCurrentUserProfile(session.user.id);
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      if (user) {
+        fetchCurrentUserProfile(user.id);
+        fetchSavedStatus(user.id);
+      } else {
+        setIsSaved(false);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setCurrentUser(session?.user ?? null);
-      if (session?.user) {
-        fetchCurrentUserProfile(session.user.id);
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      if (user) {
+        fetchCurrentUserProfile(user.id);
+        fetchSavedStatus(user.id);
+      } else {
+        setIsSaved(false);
       }
     });
 
-    fetchLikes();
-    fetchComments();
-    fetchAnalytics();
-    fetchSavedStatus();
-
     return () => subscription.unsubscribe();
-  }, [id, currentUser]);
+  }, [id]);
 
   const fetchCurrentUserProfile = async (userId: string) => {
     const { data } = await supabase
@@ -207,22 +216,35 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
     }
   };
 
-  const fetchSavedStatus = async () => {
-    if (!currentUser) {
+  const fetchSavedStatus = async (userId: string) => {
+    if (!userId) {
       setIsSaved(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("saved_posts")
-      .select("id")
-      .eq("post_id", id)
-      .eq("user_id", currentUser.id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("saved_posts")
+        .select("id")
+        .eq("post_id", id)
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    if (!error && data) {
-      setIsSaved(true);
-    } else {
+      if (error) {
+        // If table doesn't exist, silently fail (migration might not be run yet)
+        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+          console.warn("saved_posts table might not exist yet. Please run the migration.");
+          setIsSaved(false);
+          return;
+        }
+        console.error("Error fetching saved status:", error);
+        setIsSaved(false);
+        return;
+      }
+
+      setIsSaved(!!data);
+    } catch (err) {
+      console.error("Unexpected error fetching saved status:", err);
       setIsSaved(false);
     }
   };
@@ -236,44 +258,80 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
       return;
     }
 
-    if (isSaved) {
-      const { error } = await supabase
-        .from("saved_posts")
-        .delete()
-        .eq("post_id", id)
-        .eq("user_id", currentUser.id);
+    try {
+      if (isSaved) {
+        const { error } = await supabase
+          .from("saved_posts")
+          .delete()
+          .eq("post_id", id)
+          .eq("user_id", currentUser.id);
 
-      if (!error) {
+        if (error) {
+          console.error("Error unsaving post:", error);
+          toast({
+            title: "Error",
+            description: error.message || "Failed to unsave post. Please ensure the saved_posts table exists.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         setIsSaved(false);
+        // Refresh saved status to ensure consistency
+        if (currentUser) {
+          fetchSavedStatus(currentUser.id);
+        }
         toast({
           title: "Success",
           description: "Post removed from saved",
         });
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to unsave post",
-          variant: "destructive",
-        });
-      }
-    } else {
-      const { error } = await supabase
-        .from("saved_posts")
-        .insert({ post_id: id, user_id: currentUser.id });
+        const { error } = await supabase
+          .from("saved_posts")
+          .insert({ post_id: id, user_id: currentUser.id });
 
-      if (!error) {
+        if (error) {
+          console.error("Error saving post:", error);
+          
+          // Check if it's a duplicate key error (already saved)
+          if (error.code === '23505' || error.message.includes('duplicate')) {
+            setIsSaved(true);
+            // Refresh saved status to ensure consistency
+            if (currentUser) {
+              fetchSavedStatus(currentUser.id);
+            }
+            toast({
+              title: "Already saved",
+              description: "This post is already in your saved posts",
+            });
+            return;
+          }
+
+          toast({
+            title: "Error",
+            description: error.message || "Failed to save post. Please ensure the saved_posts table exists.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         setIsSaved(true);
+        // Refresh saved status to ensure consistency
+        if (currentUser) {
+          fetchSavedStatus(currentUser.id);
+        }
         toast({
           title: "Success",
           description: "Post saved successfully",
         });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to save post",
-          variant: "destructive",
-        });
       }
+    } catch (err: any) {
+      console.error("Unexpected error in handleSave:", err);
+      toast({
+        title: "Error",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -563,7 +621,11 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
                     : "text-muted-foreground hover:text-primary hover:bg-muted/50"
                 }`}
               >
-                <Bookmark className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+                {isSaved ? (
+                  <BookmarkCheck className="h-5 w-5 fill-current" />
+                ) : (
+                  <Bookmark className="h-5 w-5" />
+                )}
                 <span className="font-medium">{isSaved ? "Saved" : "Save"}</span>
               </button>
             </div>

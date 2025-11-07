@@ -11,6 +11,7 @@ import RoomChat from "./pages/RoomChat";
 import CreatePost from "./pages/CreatePost";
 import Auth from "./pages/Auth";
 import Chat from "./pages/Chat";
+import Saved from "./pages/Saved";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/room/:roomId" element={<RoomChat />} />
             <Route path="/create" element={<CreatePost />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/saved" element={<Saved />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />

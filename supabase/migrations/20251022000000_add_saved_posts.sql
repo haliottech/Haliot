@@ -27,3 +27,7 @@ CREATE POLICY "Users can unsave posts"
 CREATE INDEX IF NOT EXISTS idx_saved_posts_user ON public.saved_posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_saved_posts_post ON public.saved_posts(post_id);
 
+-- Enable realtime for saved_posts table
+ALTER TABLE public.saved_posts REPLICA IDENTITY FULL;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.saved_posts;
+
