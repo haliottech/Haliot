@@ -415,7 +415,7 @@ const ResearchCard = ({ id, author, authorAffiliation, authorAvatar, title, summ
   };
 
   return (
-    <Card className="p-6 lg:p-8 hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm border-border/50 shadow-lg">
+    <Card id={`post-${id}`} className="p-6 lg:p-8 hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm border-border/50 shadow-lg">
       <div className="flex gap-5">
         {userId ? (
           <Link to={`/profile/${userId}`}>

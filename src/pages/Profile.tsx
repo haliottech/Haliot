@@ -996,7 +996,10 @@ const Profile = () => {
                 <div
                   key={post.id}
                   className="p-4 border border-border/50 rounded-lg hover:border-primary/30 hover:bg-muted/30 transition-all cursor-pointer"
-                  onClick={() => navigate(`/post/${post.id}`)}
+                  onClick={() => {
+                    setShowListDialog(false);
+                    navigate(`/?postId=${post.id}`);
+                  }}
                 >
                   <h4 className="font-semibold text-lg mb-2">{post.title}</h4>
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{post.summary}</p>

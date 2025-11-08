@@ -6,7 +6,7 @@ import TrendingSidebar from "@/components/Feed/TrendingSidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PenSquare, Loader2, XCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -14,10 +14,12 @@ const Feed = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const highlightedPostId = searchParams.get('postId');
 
   useEffect(() => {
     fetchPosts(selectedTopic);
-  }, [selectedTopic]);
+  }, [selectedTopic, highlightedPostId]);
 
   const fetchPosts = async (topic?: string | null) => {
     setLoading(true);
@@ -53,7 +55,30 @@ const Feed = () => {
           variant: "destructive",
         });
       } else {
-        setPosts(data || []);
+        const postsData = data || [];
+        
+        // If there's a highlighted post ID, move it to the top
+        if (highlightedPostId) {
+          const highlightedPost = postsData.find((p: any) => p.id === highlightedPostId);
+          if (highlightedPost) {
+            const otherPosts = postsData.filter((p: any) => p.id !== highlightedPostId);
+            setPosts([highlightedPost, ...otherPosts]);
+            
+            // Scroll to the top post after a short delay
+            setTimeout(() => {
+              const element = document.getElementById(`post-${highlightedPostId}`);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Remove the query parameter from URL after scrolling
+                window.history.replaceState({}, '', '/');
+              }
+            }, 100);
+          } else {
+            setPosts(postsData);
+          }
+        } else {
+          setPosts(postsData);
+        }
       }
     } catch (err: any) {
       console.error("Network error:", err);
