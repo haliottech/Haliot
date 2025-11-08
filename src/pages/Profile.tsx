@@ -10,9 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { User } from "@supabase/supabase-js";
 import Header from "@/components/Layout/Header";
-import { FileText, Camera, Award, Linkedin, GraduationCap, BookOpen, UserPlus, UserMinus, ThumbsUp, MessageCircle, ExternalLink, Mail, Calendar } from "lucide-react";
+import { FileText, Camera, Award, Linkedin, GraduationCap, BookOpen, UserPlus, UserMinus, ThumbsUp, MessageCircle, ExternalLink, Mail, Calendar, Loader2 } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -32,6 +33,10 @@ const Profile = () => {
     publications: 0,
     endorsements: 0
   });
+  const [showListDialog, setShowListDialog] = useState(false);
+  const [listType, setListType] = useState<'followers' | 'following' | 'publications' | 'endorsements' | null>(null);
+  const [listData, setListData] = useState<any[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
 
   // Determine which user's profile to show
   const profileUserId = userId || currentUser?.id;
@@ -299,6 +304,145 @@ const Profile = () => {
     navigate("/auth");
   };
 
+  const fetchFollowers = async () => {
+    if (!profileUserId) return;
+    setLoadingList(true);
+    try {
+      const { data: followsData, error: followsError } = await (supabase as any)
+        .from("user_follows")
+        .select("follower_id, created_at")
+        .eq("following_id", profileUserId)
+        .order("created_at", { ascending: false });
+
+      if (followsError) throw followsError;
+
+      if (!followsData || followsData.length === 0) {
+        setListData([]);
+        setLoadingList(false);
+        return;
+      }
+
+      const followerIds = followsData.map((f: any) => f.follower_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, avatar_url, affiliation")
+        .in("id", followerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const combined = followsData.map((follow: any) => ({
+        ...follow,
+        follower: profilesData?.find((p: any) => p.id === follow.follower_id) || null
+      }));
+
+      setListData(combined);
+    } catch (err: any) {
+      console.error("Error fetching followers:", err);
+      toast({
+        title: "Error",
+        description: "Failed to load followers",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  const fetchFollowing = async () => {
+    if (!profileUserId) return;
+    setLoadingList(true);
+    try {
+      const { data: followsData, error: followsError } = await (supabase as any)
+        .from("user_follows")
+        .select("following_id, created_at")
+        .eq("follower_id", profileUserId)
+        .order("created_at", { ascending: false });
+
+      if (followsError) throw followsError;
+
+      if (!followsData || followsData.length === 0) {
+        setListData([]);
+        setLoadingList(false);
+        return;
+      }
+
+      const followingIds = followsData.map((f: any) => f.following_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, avatar_url, affiliation")
+        .in("id", followingIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const combined = followsData.map((follow: any) => ({
+        ...follow,
+        following: profilesData?.find((p: any) => p.id === follow.following_id) || null
+      }));
+
+      setListData(combined);
+    } catch (err: any) {
+      console.error("Error fetching following:", err);
+      toast({
+        title: "Error",
+        description: "Failed to load following",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  const fetchPublicationsList = async () => {
+    if (!profileUserId) return;
+    setLoadingList(true);
+    try {
+      const { data, error } = await supabase
+        .from("research_posts")
+        .select(`
+          *,
+          profiles (full_name, avatar_url)
+        `)
+        .eq("user_id", profileUserId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setListData(data || []);
+    } catch (err: any) {
+      console.error("Error fetching publications:", err);
+      toast({
+        title: "Error",
+        description: "Failed to load publications",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  const handleStatClick = async (type: 'followers' | 'following' | 'publications' | 'endorsements') => {
+    setListType(type);
+    setShowListDialog(true);
+    setListData([]);
+
+    switch (type) {
+      case 'followers':
+        await fetchFollowers();
+        break;
+      case 'following':
+        await fetchFollowing();
+        break;
+      case 'publications':
+        await fetchPublicationsList();
+        break;
+      case 'endorsements':
+        // Endorsements are already fetched
+        setListData(endorsements);
+        break;
+    }
+  };
+
   const getTimeAgo = (date: string) => {
     const now = new Date();
     const posted = new Date(date);
@@ -411,22 +555,34 @@ const Profile = () => {
 
                 {/* Stats */}
                 <div className="flex flex-wrap gap-6 lg:gap-8">
-                  <div className="text-center">
+                  <button
+                    onClick={() => handleStatClick('followers')}
+                    className="text-center hover:opacity-80 transition-opacity cursor-pointer"
+                  >
                     <div className="text-3xl font-bold text-foreground">{stats.followers}</div>
                     <div className="text-sm text-muted-foreground font-medium">Followers</div>
-                  </div>
-                  <div className="text-center">
+                  </button>
+                  <button
+                    onClick={() => handleStatClick('following')}
+                    className="text-center hover:opacity-80 transition-opacity cursor-pointer"
+                  >
                     <div className="text-3xl font-bold text-foreground">{stats.following}</div>
                     <div className="text-sm text-muted-foreground font-medium">Following</div>
-                  </div>
-                  <div className="text-center">
+                  </button>
+                  <button
+                    onClick={() => handleStatClick('publications')}
+                    className="text-center hover:opacity-80 transition-opacity cursor-pointer"
+                  >
                     <div className="text-3xl font-bold text-foreground">{stats.publications}</div>
                     <div className="text-sm text-muted-foreground font-medium">Publications</div>
-                  </div>
-                  <div className="text-center">
+                  </button>
+                  <button
+                    onClick={() => handleStatClick('endorsements')}
+                    className="text-center hover:opacity-80 transition-opacity cursor-pointer"
+                  >
                     <div className="text-3xl font-bold text-foreground">{stats.endorsements}</div>
                     <div className="text-sm text-muted-foreground font-medium">Endorsements</div>
-                  </div>
+                  </button>
                 </div>
 
                 {/* Action Buttons */}
@@ -760,6 +916,134 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* List Dialog */}
+      <Dialog open={showListDialog} onOpenChange={setShowListDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {listType === 'followers' && 'Followers'}
+              {listType === 'following' && 'Following'}
+              {listType === 'publications' && 'Publications'}
+              {listType === 'endorsements' && 'Endorsements'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {loadingList ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : listData.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {listType === 'followers' && 'No followers yet'}
+                {listType === 'following' && 'Not following anyone yet'}
+                {listType === 'publications' && 'No publications yet'}
+                {listType === 'endorsements' && 'No endorsements yet'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-4">
+              {listType === 'followers' && listData.map((item: any) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 p-4 border border-border/50 rounded-lg hover:border-primary/30 hover:bg-muted/30 transition-all cursor-pointer"
+                  onClick={() => item.follower?.id && navigate(`/profile/${item.follower.id}`)}
+                >
+                  <Avatar className="h-12 w-12">
+                    {item.follower?.avatar_url ? (
+                      <img src={item.follower.avatar_url} alt={item.follower.full_name} />
+                    ) : (
+                      <AvatarFallback>
+                        {item.follower?.full_name?.charAt(0) || item.follower?.email?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-semibold">{item.follower?.full_name || item.follower?.email || 'Unknown'}</p>
+                    {item.follower?.affiliation && (
+                      <p className="text-sm text-muted-foreground">{item.follower.affiliation}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {listType === 'following' && listData.map((item: any) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 p-4 border border-border/50 rounded-lg hover:border-primary/30 hover:bg-muted/30 transition-all cursor-pointer"
+                  onClick={() => item.following?.id && navigate(`/profile/${item.following.id}`)}
+                >
+                  <Avatar className="h-12 w-12">
+                    {item.following?.avatar_url ? (
+                      <img src={item.following.avatar_url} alt={item.following.full_name} />
+                    ) : (
+                      <AvatarFallback>
+                        {item.following?.full_name?.charAt(0) || item.following?.email?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-semibold">{item.following?.full_name || item.following?.email || 'Unknown'}</p>
+                    {item.following?.affiliation && (
+                      <p className="text-sm text-muted-foreground">{item.following.affiliation}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {listType === 'publications' && listData.map((post: any) => (
+                <div
+                  key={post.id}
+                  className="p-4 border border-border/50 rounded-lg hover:border-primary/30 hover:bg-muted/30 transition-all cursor-pointer"
+                  onClick={() => navigate(`/post/${post.id}`)}
+                >
+                  <h4 className="font-semibold text-lg mb-2">{post.title}</h4>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{post.summary}</p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {getTimeAgo(post.created_at)}
+                    </span>
+                    {post.tags && post.tags.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        {post.tags.slice(0, 2).map((tag: string) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">#{tag}</Badge>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {listType === 'endorsements' && listData.map((endorsement: any) => (
+                <div key={endorsement.id} className="p-4 border border-border/50 rounded-lg hover:border-primary/30 hover:bg-muted/30 transition-all">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-12 w-12">
+                      {endorsement.endorser?.avatar_url ? (
+                        <img src={endorsement.endorser.avatar_url} alt={endorsement.endorser.full_name} />
+                      ) : (
+                        <AvatarFallback>
+                          {endorsement.endorser?.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold">{endorsement.endorser?.full_name || 'Unknown'}</p>
+                        <Badge variant="secondary" className="text-xs">{endorsement.skill}</Badge>
+                      </div>
+                      {endorsement.comment && (
+                        <p className="text-sm text-muted-foreground">{endorsement.comment}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
